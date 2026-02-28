@@ -1,0 +1,55 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import Dashboard from './components/Dashboard';
+import FocusMode from './components/FocusMode';
+import BreathStudio from './components/BreathStudio';
+import Hydration from './components/Hydration';
+import TaskSoil from './components/TaskSoil';
+import SoundSanctuary from './components/SoundSanctuary';
+import StretchBreak from './components/StretchBreak';
+import { AppProvider } from './AppContext';
+
+export type View = 'dashboard' | 'focus' | 'breathe' | 'hydrate' | 'tasks' | 'sounds' | 'stretch';
+
+export default function App() {
+  const [currentView, setCurrentView] = useState<View>('dashboard');
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'dashboard': return <Dashboard onNavigate={setCurrentView} />;
+      case 'focus': return <FocusMode onBack={() => setCurrentView('dashboard')} />;
+      case 'breathe': return <BreathStudio onBack={() => setCurrentView('dashboard')} />;
+      case 'hydrate': return <Hydration onBack={() => setCurrentView('dashboard')} />;
+      case 'tasks': return <TaskSoil onBack={() => setCurrentView('dashboard')} />;
+      case 'sounds': return <SoundSanctuary onBack={() => setCurrentView('dashboard')} />;
+      case 'stretch': return <StretchBreak onBack={() => setCurrentView('dashboard')} />;
+      default: return <Dashboard onNavigate={setCurrentView} />;
+    }
+  };
+
+  return (
+    <AppProvider>
+      <div 
+        className="min-h-screen flex items-center justify-center p-0 sm:p-8 font-sans relative transition-colors duration-300"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }}
+      >
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-0 transition-colors duration-300"></div>
+        
+        <div className="relative z-10 w-full max-w-[400px] h-[600px] sm:rounded-[2rem] overflow-hidden shadow-2xl bg-background-light transition-colors duration-300 flex flex-col">
+          <div className="flex-1 overflow-hidden relative">
+            {renderView()}
+          </div>
+        </div>
+      </div>
+    </AppProvider>
+  );
+}
