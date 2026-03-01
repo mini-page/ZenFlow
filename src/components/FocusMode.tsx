@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Square, Pause, Play, RotateCcw, Edit3, X, Timer, History, Calendar, CheckCircle2 } from 'lucide-react';
 import { useAppContext } from '../AppContext';
+import SharedHeader from './SharedHeader';
 
 interface FocusSession {
   id: number;
@@ -80,7 +81,6 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
           resetTimer();
           setIsActive(false);
           setCompletedCycles(0);
-          alert('Goal reached! Great job!');
         }, 1000);
       }
     }
@@ -150,65 +150,54 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-full p-4 gap-4 bg-background-light text-sage-900 transition-colors duration-1000 relative overflow-hidden">
+    <div className="flex flex-col h-full w-full p-0 bg-background-light text-sage-900 transition-colors duration-1000 relative overflow-hidden">
       {/* Dynamic Background */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className={`absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-all duration-1000 ease-in-out ${isBreak ? 'bg-accent-water/20 scale-110' : 'bg-primary/20 scale-100'}`}></div>
-        <div className={`absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full blur-[100px] transition-all duration-1000 ease-in-out ${isBreak ? 'bg-sage-300/20 scale-90' : 'bg-accent-clay/10 scale-110'}`}></div>
+        <div className={`absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-all duration-1000 ease-in-out ${isBreak ? 'bg-blue-400/20 scale-110' : 'bg-primary/20 scale-100'}`}></div>
+        <div className={`absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full blur-[100px] transition-all duration-1000 ease-in-out ${isBreak ? 'bg-sky-200/30 scale-90' : 'bg-accent-clay/10 scale-110'}`}></div>
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-2 pt-2 shrink-0 transition-opacity duration-500 opacity-100">
-        <div className="flex items-center gap-2">
-          <button onClick={onBack} className="p-1.5 hover:bg-sage-100 rounded-lg transition-colors">
-            <ArrowLeft className="text-sage-700" size={20} />
+      <SharedHeader 
+        title="Focus Mode" 
+        onBack={onBack} 
+        icon={Timer} 
+        iconColor={isBreak ? "text-blue-400" : "text-rose-500"}
+        actions={
+          <button onClick={() => { setShowModal(true); setModalTab('history'); }} className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-sage-600 hover:bg-primary/20 transition-all">
+            <History size={20} />
           </button>
-          <div className="bg-primary/20 p-1.5 rounded-lg">
-            <Timer className="text-primary-dark" size={20} />
-          </div>
-          <h1 className="font-serif text-xl font-semibold text-sage-700">Focus Mode</h1>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => { setShowModal(true); setModalTab('history'); }} className="p-2 hover:bg-sage-100 rounded-full transition-colors" title="Session History">
-            <History className="text-sage-600" size={20} />
-          </button>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center w-full overflow-hidden py-4 animate-in fade-in zoom-in-95 duration-1000">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center w-full overflow-hidden py-4 animate-in fade-in zoom-in-95 duration-1000 p-4">
         
-        {/* Task Display / Input */}
-        <div className={`w-full relative group z-40 mb-4 transition-all duration-500 ${isActive ? 'max-w-[80%] md:max-w-[600px]' : 'max-w-[60%] md:max-w-[400px]'}`}>
-          <input 
-            type="text" 
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            className={`w-full bg-white/30 backdrop-blur-md border border-white/40 hover:border-primary/40 focus:border-primary/60 focus:bg-white/60 focus:ring-4 focus:ring-primary/10 text-center text-sage-800 font-serif font-bold outline-none placeholder:text-sage-500/60 transition-all drop-shadow-sm shadow-[0_4px_20px_rgba(0,0,0,0.03)] ${isActive ? 'text-2xl md:text-3xl py-3 px-6 rounded-2xl' : 'text-lg md:text-xl py-2 px-4 rounded-xl'}`}
-            placeholder="What is your motive?"
-          />
-        </div>
-
-        {!isActive && (
-          <div className="z-40 flex flex-col items-center gap-2 mb-6">
-            <select 
-              value={targetCycles}
-              onChange={(e) => setTargetCycles(parseInt(e.target.value))}
-              className="bg-white/80 backdrop-blur-md border border-sage-200/50 text-sage-800 text-sm font-medium rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer hover:bg-white transition-all shadow-sm appearance-none"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234b5563' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: `right 0.5rem center`,
-                backgroundRepeat: `no-repeat`,
-                backgroundSize: `1.5em 1.5em`,
-                paddingRight: `2.5rem`
-              }}
-            >
-              <option value="0">Infinite Cycles</option>
-              <option value="1">1 Cycle</option>
-              <option value="2">2 Cycles</option>
-              <option value="4">4 Cycles</option>
-              <option value="8">8 Cycles</option>
-            </select>
+        {/* Motive Display / Input (Breath Studio Chemistry) */}
+        <div className="absolute top-4 md:top-8 text-center z-40 w-full h-24 flex flex-col items-center justify-center px-6">
+          {/* Editable State (Stopped) */}
+          <div className={`w-full max-w-[400px] transition-all duration-700 ease-in-out ${isActive ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+            <div className="relative group">
+              <input 
+                type="text" 
+                value={task}
+                onChange={(e) => setTask(e.target.value)}
+                className="w-full bg-white/20 backdrop-blur-sm border-b border-white/40 hover:border-primary/40 focus:border-primary/60 text-center text-sage-800 font-serif font-bold text-xl md:text-2xl outline-none placeholder:text-sage-500/40 transition-all py-2 pr-8"
+                placeholder="What is your motive?"
+              />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 text-sage-400 group-hover:text-primary transition-colors">
+                <Edit3 size={16} />
+              </div>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sage-400 mt-2">Set your intention</p>
           </div>
-        )}
+
+          {/* Persistent Display State (Active) */}
+          <div className={`absolute w-full flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-dark/40 mb-2">Currently Planting</span>
+            <h2 className={`text-3xl md:text-4xl font-serif font-bold text-sage-800 tracking-tight drop-shadow-sm transition-all duration-1000 ease-in-out ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+              {task || 'Focusing'}
+            </h2>
+          </div>
+        </div>
 
         {/* Central Timer Area */}
         <div 
@@ -259,14 +248,14 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
             <svg className="absolute inset-0 w-full h-full transform -rotate-90 drop-shadow-xl z-10 pointer-events-none" viewBox="0 0 100 100">
               <circle 
                 cx="50" cy="50" r="46" 
-                fill={isBreak ? "rgba(139, 178, 196, 0.1)" : "rgba(224, 216, 208, 0.3)"} 
+                fill={isBreak ? "rgba(186, 230, 253, 0.1)" : "rgba(224, 216, 208, 0.3)"} 
                 className="stroke-white/50 transition-colors duration-1000" 
                 strokeWidth="2" 
               />
               <circle 
                 cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeLinecap="round"
                 strokeWidth={timeLeft <= 5 && timeLeft > 0 ? "6" : "4"}
-                className={`${timeLeft <= 5 && timeLeft > 0 ? 'text-red-500' : (isBreak ? 'text-accent-water' : 'text-primary')} transition-all duration-1000 ease-linear drop-shadow-md`}
+                className={`${timeLeft <= 5 && timeLeft > 0 ? 'text-red-500' : (isBreak ? 'text-blue-400' : 'text-primary')} transition-all duration-1000 ease-linear drop-shadow-md`}
                 strokeDasharray="289"
                 strokeDashoffset={((totalTime - timeLeft) / totalTime) * 289}
               />
@@ -319,8 +308,8 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
         {/* Phase Indicator */}
         {!isActive && (
           <div className="mt-8 flex items-center gap-2 glass-panel px-4 py-1.5 rounded-full shadow-sm z-40">
-            <span className={`w-2 h-2 rounded-full animate-pulse ${isBreak ? 'bg-accent-water' : 'bg-primary'}`}></span>
-            <span className={`text-xs font-bold uppercase tracking-wider ${isBreak ? 'text-accent-water' : 'text-primary-dark'}`}>
+            <span className={`w-2 h-2 rounded-full animate-pulse ${isBreak ? 'bg-blue-400' : 'bg-primary'}`}></span>
+            <span className={`text-xs font-bold uppercase tracking-wider ${isBreak ? 'text-blue-400' : 'text-primary-dark'}`}>
               {isBreak ? 'Break Time' : 'Deep Work'}
             </span>
           </div>

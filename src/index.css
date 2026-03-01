@@ -87,9 +87,21 @@
   }
 }
 
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-background-light);
   color: var(--color-sage-900);
   transition: background-color 0.3s ease, color 0.3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
 }

@@ -5,6 +5,8 @@ export interface Task {
   text: string;
   completed: boolean;
   priority: 0 | 1 | 2 | 3;
+  tags?: string[];
+  context?: string;
 }
 
 export interface Sound {

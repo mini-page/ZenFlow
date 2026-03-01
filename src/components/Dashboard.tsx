@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda } from 'lucide-react';
+import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility } from 'lucide-react';
 import { View } from '../App';
 import { useAppContext } from '../AppContext';
+import SharedHeader from './SharedHeader';
 
 interface Affirmation {
   id: number;
@@ -27,6 +28,29 @@ export default function Dashboard({ onNavigate }: Props) {
   const [showAffirmationModal, setShowAffirmationModal] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [newAffirmation, setNewAffirmation] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((e) => {
+        console.error(`Error attempting to enable fullscreen: ${e.message}`);
+      });
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     fetchAffirmations();
@@ -37,7 +61,6 @@ export default function Dashboard({ onNavigate }: Props) {
       const res = await fetch('/api/affirmations');
       const data = await res.json();
       setAffirmations(data);
-      // Pick a random one for the day if not already set
       if (data.length > 0) {
         const today = new Date().toDateString();
         const savedDate = localStorage.getItem('affirmationDate');
@@ -83,7 +106,7 @@ export default function Dashboard({ onNavigate }: Props) {
     }
   };
 
-  const currentAffirmation = affirmations[currentAffirmationIndex];
+  const currentAffirmation = affirmations && affirmations.length > 0 ? affirmations[currentAffirmationIndex] : null;
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -91,8 +114,8 @@ export default function Dashboard({ onNavigate }: Props) {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const priorityTasks = tasks.filter(t => !t.completed && t.priority > 0).sort((a, b) => b.priority - a.priority).slice(0, 2);
-  const activeSounds = sounds.filter(s => playing[s.id]);
+  const priorityTasks = tasks ? tasks.filter(t => !t.completed && t.priority > 0).sort((a, b) => b.priority - a.priority).slice(0, 2) : [];
+  const activeSounds = sounds ? sounds.filter(s => playing[s.id]) : [];
 
   const togglePlay = (id: string) => {
     setPlaying(prev => ({ ...prev, [id]: !prev[id] }));
@@ -125,18 +148,28 @@ export default function Dashboard({ onNavigate }: Props) {
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-300 relative overflow-hidden">
       {/* Background Elements: Morning Sun & Clouds */}
-      <div className="absolute -top-10 -right-10 w-48 h-48 bg-[#ffeeba] rounded-full blur-3xl opacity-60 animate-sun pointer-events-none"></div>
-      <div className="absolute top-20 -left-10 w-32 h-32 bg-primary/20 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+      <div className="absolute -top-10 -right-10 w-64 h-64 bg-[#ffeeba] rounded-full blur-3xl opacity-60 animate-sun pointer-events-none"></div>
+      <div className="absolute top-20 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
       
-      {/* Moving Clouds */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-10 left-[-20%] w-64 h-20 bg-white/40 rounded-full blur-2xl animate-cloud" style={{ animationDuration: '80s' }}></div>
-        <div className="absolute top-40 left-[-30%] w-80 h-24 bg-white/30 rounded-full blur-3xl animate-cloud" style={{ animationDuration: '120s', animationDelay: '-40s' }}></div>
-      </div>
+      <SharedHeader 
+        title="Dashboard" 
+        onBack={() => {}} 
+        showDashboardLink={false}
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowQuickActions(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-amber-500 group">
+              <Zap size={20} className="group-hover:scale-110 transition-transform" />
+            </button>
+            <button onClick={toggleFullscreen} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group">
+              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
+          </div>
+        }
+      />
 
-      <div className="relative z-10 flex flex-col h-full p-6">
-        {/* Header */}
-        <header className="flex justify-between items-start mb-4 shrink-0">
+      <div className="relative z-10 flex-1 flex flex-col overflow-y-auto custom-scrollbar p-4 md:p-8">
+        {/* User Greeting Section */}
+        <div className="flex justify-between items-start mb-6 shrink-0 px-2">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-slate-500 text-sm font-medium">{greeting}</h2>
@@ -167,14 +200,11 @@ export default function Dashboard({ onNavigate }: Props) {
               </div>
             )}
           </div>
-          <button onClick={() => setShowQuickActions(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-amber-500 group">
-            <Zap size={20} className="group-hover:scale-110 transition-transform" />
-          </button>
-        </header>
+        </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col">
           {/* Hero Section: The Garden */}
-          <div className="flex flex-col items-center justify-center relative mb-4 shrink-0">
+          <div className="flex flex-col items-center justify-center relative mb-8 shrink-0">
             <div className="relative w-48 h-48 flex items-end justify-center animate-float">
               <svg className="w-full h-full drop-shadow-lg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M60 140 L140 140 L130 190 H70 L60 140Z" fill="#E8B895" stroke="#2C3A2C" strokeWidth="2" strokeLinejoin="round"/>
@@ -190,114 +220,160 @@ export default function Dashboard({ onNavigate }: Props) {
             <p className="text-center text-slate-500 text-sm mt-2 font-medium">Your garden is thriving today.</p>
           </div>
 
-          {/* Hydration Reminder */}
-          <div onClick={() => onNavigate('hydrate')} className="mb-6 mx-2 p-3 glass-panel rounded-2xl border border-blue-100 shadow-sm flex items-center gap-3 cursor-pointer hover:bg-white/80 transition-colors shrink-0">
-            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              {hydrationIcon}
-            </div>
-            <p className="text-sm font-medium text-slate-700">{hydrationText}</p>
-            <ChevronRight size={16} className="text-slate-400 ml-auto" />
-          </div>
-
-          {/* Ongoing Widgets */}
-          {(isActive || timeLeft < 1500 || priorityTasks.length > 0 || activeSounds.length > 0) && (
-            <div className="mb-6 space-y-3 shrink-0">
-              {/* Active Timer Widget */}
-              {(isActive || timeLeft < 1500) && (
-                <div onClick={() => onNavigate('focus')} className="glass-panel p-4 rounded-[2rem] border border-primary/30 shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 transition-colors group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                      <Timer className="text-primary-dark" size={20} />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{isBreak ? 'Break Time' : 'Deep Work'}</h4>
-                      <p className="text-xs text-slate-500 truncate max-w-[120px]">{task}</p>
-                    </div>
+          {/* Bento Grid Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            
+            {/* Primary Bento: Focus Timer (Wide on desktop) */}
+            <div 
+              onClick={() => onNavigate('focus')}
+              className={`md:col-span-2 glass-panel p-6 rounded-[2.5rem] border border-primary/20 shadow-sm flex flex-col justify-between cursor-pointer hover:bg-white/80 transition-all group min-h-[200px] relative overflow-hidden`}
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Timer size={120} className="text-primary-dark" />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                    <Timer className="text-primary-dark" size={24} />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-primary-dark tabular-nums">{formatTime(timeLeft)}</span>
-                    <button onClick={(e) => { e.stopPropagation(); toggleTimer(); }} className="p-2 rounded-full bg-white shadow-sm hover:bg-primary/10 transition-colors text-primary-dark">
-                      {isActive ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
-                    </button>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-900">{isActive ? (isBreak ? 'Break Time' : 'Deep Work') : 'Start Focusing'}</h4>
+                    <p className="text-sm text-slate-500">{isActive ? task : 'Ready for a new session?'}</p>
                   </div>
                 </div>
-              )}
-
-              {/* Active Sounds Widget */}
-              {activeSounds.length > 0 && (
-                <div onClick={() => onNavigate('sounds')} className="glass-panel p-4 rounded-[2rem] border border-purple-200/50 shadow-sm flex flex-col gap-3 cursor-pointer hover:bg-white/80 transition-colors">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Music size={14} className="text-purple-600" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-purple-600/70">Playing Now</span>
-                  </div>
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                    {activeSounds.map(sound => (
-                      <div key={sound.id} className="flex items-center gap-2 bg-white/60 rounded-full pr-3 pl-1 py-1 border border-purple-100 min-w-fit">
-                        <button onClick={(e) => { e.stopPropagation(); togglePlay(sound.id); }} className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 hover:bg-purple-200 transition-colors">
-                          <Pause size={10} fill="currentColor" />
-                        </button>
-                        <span className="text-xs font-medium text-slate-700">{sound.name}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-black text-primary-dark tabular-nums tracking-tighter">{formatTime(timeLeft)}</span>
+                  <span className="text-xs font-bold text-primary-dark/60 uppercase tracking-widest">remaining</span>
                 </div>
-              )}
+              </div>
+              <div className="relative z-10 flex justify-end">
+                <button onClick={(e) => { e.stopPropagation(); toggleTimer(); }} className="px-6 py-2 rounded-full bg-primary text-forest-deep font-bold text-sm shadow-md hover:bg-primary-dark transition-all active:scale-95">
+                  {isActive ? 'Pause' : 'Resume Session'}
+                </button>
+              </div>
+            </div>
 
-              {/* Priority Tasks Widget */}
-              {priorityTasks.length > 0 && (
-                <div onClick={() => onNavigate('tasks')} className="glass-panel p-4 rounded-[2rem] border border-amber-200/50 shadow-sm flex flex-col gap-2 cursor-pointer hover:bg-white/80 transition-colors">
-                  <div className="flex items-center gap-2 mb-1">
-                    <ListTodo size={14} className="text-amber-600" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-600/70">Priority Tasks</span>
+            {/* Square Bento: Hydration Quick-Log */}
+            <div 
+              onClick={() => onNavigate('hydrate')}
+              className="glass-panel p-6 rounded-[2.5rem] border border-blue-100 shadow-sm flex flex-col justify-between cursor-pointer hover:bg-blue-50/50 transition-all group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
+                  <Droplets size={24} />
+                </div>
+                <ChevronRight size={20} className="text-slate-300 group-hover:text-blue-400 transition-colors" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Hydration</h4>
+                <p className="text-2xl font-black text-slate-900">1,200 <span className="text-sm font-normal text-slate-400">ml</span></p>
+              </div>
+              <p className="text-xs text-blue-600 font-medium mt-2">{hydrationText}</p>
+            </div>
+
+            {/* Tall Bento: Priority Tasks */}
+            <div 
+              onClick={() => onNavigate('tasks')}
+              className="md:row-span-2 glass-panel p-6 rounded-[2.5rem] border border-amber-100 shadow-sm flex flex-col cursor-pointer hover:bg-white/80 transition-all group"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
+                  <ListTodo size={24} />
+                </div>
+                <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-tighter">Growing</span>
+              </div>
+              <h4 className="text-lg font-bold text-slate-900 mb-4">Priority Soil</h4>
+              <div className="space-y-4 flex-1">
+                {priorityTasks.length > 0 ? priorityTasks.map(task => (
+                  <div key={task.id} className="flex gap-3 group/item">
+                    <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${task.priority === 3 ? 'bg-rose-500' : task.priority === 2 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                    <span className="text-sm font-medium text-slate-700 leading-snug group-hover/item:text-slate-900 transition-colors">{task.text}</span>
                   </div>
-                  {priorityTasks.map(task => (
-                    <div key={task.id} className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${task.priority === 3 ? 'bg-rose-500' : task.priority === 2 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                      <span className="text-sm font-medium text-slate-700 truncate">{task.text}</span>
+                )) : (
+                  <p className="text-sm text-slate-400 italic">No priority tasks today. Use the extra time to breathe.</p>
+                )}
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-100">
+                <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                  View all tasks <ChevronRight size={14} />
+                </span>
+              </div>
+            </div>
+
+            {/* Wide Bento: Affirmation */}
+            <div 
+              onClick={() => setShowAffirmationModal(true)}
+              className="md:col-span-2 glass-panel p-8 rounded-[2.5rem] border border-white shadow-soft cursor-pointer group hover:bg-white/90 transition-all flex flex-col justify-center relative overflow-hidden bg-gradient-to-br from-white/40 to-primary/5"
+            >
+              <Quote className="absolute top-6 left-6 text-primary/20" size={40} />
+              <div className="relative z-10 text-center px-4">
+                <p className="text-xl md:text-2xl font-serif font-bold text-slate-800 leading-relaxed">
+                  {currentAffirmation ? `"${currentAffirmation.text}"` : "Loading your daily inspiration..."}
+                </p>
+                <div className="mt-4 flex justify-center">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-dark/60 bg-primary/10 px-4 py-1 rounded-full">Daily Intention</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Medium Bento: Active Sounds */}
+            <div 
+              onClick={() => onNavigate('sounds')}
+              className="md:col-span-2 glass-panel p-6 rounded-[2.5rem] border border-purple-100 shadow-sm flex items-center justify-between cursor-pointer hover:bg-white/80 transition-all group overflow-hidden"
+            >
+              <div className="flex items-center gap-4 flex-1">
+                <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600 group-hover:rotate-12 transition-transform">
+                  <Music size={28} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-purple-600/70 mb-1">Atmosphere</h4>
+                  {activeSounds.length > 0 ? (
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                      {activeSounds.map(sound => (
+                        <span key={sound.id} className="text-lg font-bold text-slate-900 whitespace-nowrap">{sound.name}</span>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p className="text-lg font-bold text-slate-400">Silent Sanctuary</p>
+                  )}
                 </div>
-              )}
+              </div>
+              <div className="flex items-center gap-3">
+                {activeSounds.length > 0 && (
+                  <div className="size-8 rounded-full border-2 border-purple-400 border-t-transparent animate-spin-slow"></div>
+                )}
+                <ChevronRight size={20} className="text-slate-300" />
+              </div>
             </div>
-          )}
 
-          {/* Daily Affirmation */}
-          <div 
-            className="mb-6 mx-2 p-5 glass-panel rounded-[2rem] border border-white/50 shadow-soft cursor-pointer group hover:bg-white/80 transition-all shrink-0"
-            onClick={() => setShowAffirmationModal(true)}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Quote size={14} className="text-primary-dark" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Daily Affirmation</span>
-            </div>
-            <p className="text-slate-700 text-sm italic font-medium leading-relaxed">
-              {currentAffirmation ? `"${currentAffirmation.text}"` : "Loading your daily inspiration..."}
-            </p>
-            <div className="flex justify-end mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-[10px] text-primary-dark font-bold flex items-center gap-1">
-                Change <ChevronRight size={10} />
-              </span>
+            {/* Stats Pills integrated into the bottom or as a mini Bento row */}
+            <div className="md:col-span-3 flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex items-center gap-3 bg-white border border-white shadow-soft px-6 py-4 rounded-[2rem] flex-1 justify-center group hover:scale-[1.02] transition-transform">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary-dark"><Timer size={20} /></div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-900">45m</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Focused</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white border border-white shadow-soft px-6 py-4 rounded-[2rem] flex-1 justify-center group hover:scale-[1.02] transition-transform">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-500"><Droplets size={20} /></div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-900">600ml</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Hydrated</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white border border-white shadow-soft px-6 py-4 rounded-[2rem] flex-1 justify-center group hover:scale-[1.02] transition-transform">
+                <div className="p-2 rounded-xl bg-amber-50 text-amber-600"><CheckCircle2 size={20} /></div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-900">3/5</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Planted</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Quick Stats Pills */}
-          <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide shrink-0">
-            <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white/50 px-4 py-2.5 rounded-2xl shadow-sm flex-1 min-w-fit justify-center">
-              <Timer className="text-primary-dark" size={18} />
-              <span className="text-slate-800 text-sm font-semibold whitespace-nowrap">45m</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white/50 px-4 py-2.5 rounded-2xl shadow-sm flex-1 min-w-fit justify-center">
-              <Droplets className="text-accent-water" size={18} />
-              <span className="text-slate-800 text-sm font-semibold whitespace-nowrap">600ml</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white/50 px-4 py-2.5 rounded-2xl shadow-sm flex-1 min-w-fit justify-center">
-              <CheckCircle2 className="text-accent-clay" size={18} />
-              <span className="text-slate-800 text-sm font-semibold whitespace-nowrap">3/5</span>
-            </div>
-          </div>
-
-          {/* Action Grid */}
-          <div className="grid grid-cols-2 gap-4 pb-4">
+          {/* Action Grid (The small utility circles) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pb-10">
             <button onClick={() => onNavigate('focus')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/30 transition-colors">
                 <Timer className="text-primary-dark group-hover:rotate-12 transition-transform duration-300" size={20} />

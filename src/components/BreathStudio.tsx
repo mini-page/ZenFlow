@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as Icons from 'lucide-react';
-import { X, Volume2, Settings, ArrowLeft, Wind, Moon, Square, Sun, Droplets, Heart, Flower2, Play, Pause, Plus, Edit2, Trash2, History, Activity } from 'lucide-react';
+import { X, Wind, Settings, ArrowLeft, Play, Pause, Plus, Edit2, Trash2, History, Activity } from 'lucide-react';
 import { useAppContext, BreathingPattern } from '../AppContext';
+import SharedHeader from './SharedHeader';
 
 const MESSAGES = {
   'Inhale': ['Fill your lungs with peace', 'Breathe in the morning light', 'Invite calm into your body'],
@@ -248,7 +249,7 @@ export default function BreathStudio({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className={`flex flex-col h-full w-full p-6 gap-6 transition-colors duration-700 relative overflow-hidden ${showSettings ? 'bg-background-light' : 'bg-[#fdf8f5]'}`}>
+    <div className={`flex flex-col h-full w-full p-0 transition-colors duration-700 relative overflow-hidden ${showSettings ? 'bg-background-light' : 'bg-[#fdf8f5]'}`}>
       
       {/* Unified Background & Particles */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -272,27 +273,19 @@ export default function BreathStudio({ onBack }: { onBack: () => void }) {
         )}
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-2 pt-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <button onClick={showSettings ? () => { setShowSettings(false); setEditingPattern(null); } : onBack} className="p-2 hover:bg-white/40 rounded-full transition-colors">
-            <ArrowLeft className="text-sage-700" size={24} />
+      <SharedHeader 
+        title={showSettings ? "Settings" : "Breath Studio"} 
+        onBack={showSettings ? () => { setShowSettings(false); setEditingPattern(null); } : onBack} 
+        icon={Wind} 
+        actions={
+          <button onClick={() => { setShowSettings(!showSettings); setEditingPattern(null); }} className={`size-10 flex items-center justify-center rounded-xl transition-all ${showSettings ? 'bg-primary text-forest-deep' : 'bg-white/50 hover:bg-primary/20'}`}>
+            {showSettings ? <X size={20} /> : <Settings size={20} />}
           </button>
-          <div className="bg-white/40 p-2 rounded-2xl backdrop-blur-sm">
-            <Wind className="text-[#5e8ea6]" size={24} />
-          </div>
-          <h1 className="font-serif text-2xl font-semibold text-sage-700">
-            {showSettings ? 'Settings' : 'Breath Studio'}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => { setShowSettings(!showSettings); setEditingPattern(null); }} className="p-2.5 hover:bg-white/40 rounded-full transition-colors">
-            {showSettings ? <X className="text-sage-600" size={24} /> : <Settings className="text-sage-600" size={24} />}
-          </button>
-        </div>
-      </header>
+        }
+      />
 
       {showSettings ? (
-        <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 mt-2">
+        <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 mt-2 px-6">
           
           {/* Tabs */}
           {!editingPattern && (
