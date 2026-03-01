@@ -29,12 +29,9 @@ export default function Dashboard({ onNavigate }: Props) {
     water, hydrationGoal
   } = useAppContext();
 
+  // 1. Initialize ALL states at the top
   const [userName, setUserName] = useState(() => localStorage.getItem('zenflow_username') || 'Alex');
   const [isEditingName, setIsEditingName] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem('zenflow_username', userName);
-  }, [userName]);
   const [affirmations, setAffirmations] = useState<Affirmation[]>([]);
   const [currentAffirmationIndex, setCurrentAffirmationIndex] = useState(0);
   const [showAffirmationModal, setShowAffirmationModal] = useState(false);
@@ -43,6 +40,51 @@ export default function Dashboard({ onNavigate }: Props) {
   const [newAffirmation, setNewAffirmation] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
+  const [weather, setWeather] = useState<{ condition: string; temp: number }>({ condition: 'clear', temp: 72 });
+  const [streak, setStreak] = useState(0);
+
+  // 2. Effects
+  useEffect(() => {
+    localStorage.setItem('zenflow_username', userName);
+  }, [userName]);
+
+  useEffect(() => {
+    fetchAffirmations();
+    fetchSessions();
+  }, []);
+
+  useEffect(() => {
+    // Determine streak (consecutive sessions today)
+    if (!sessions || sessions.length === 0) {
+      setStreak(0);
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const todaysSessions = sessions.filter(s => s.completed_at && s.completed_at.startsWith(today)).length;
+    setStreak(todaysSessions);
+
+    const fetchWeather = async () => {
+      try {
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+            const data = await res.json();
+            const code = data.current_weather?.weathercode || 0;
+            let condition = 'clear';
+            if (code >= 51 && code <= 67) condition = 'rain';
+            else if (code >= 71 && code <= 86) condition = 'snow';
+            else if (code >= 1 && code <= 3) condition = 'cloudy';
+            
+            setWeather({ condition, temp: Math.round(data.current_weather?.temperature || 72) });
+          }, () => {
+            console.log('Geolocation denied or failed');
+          });
+        }
+      } catch (e) { console.error('Weather fetch failed', e); }
+    };
+    fetchWeather();
+  }, [sessions]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -64,11 +106,6 @@ export default function Dashboard({ onNavigate }: Props) {
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  useEffect(() => {
-    fetchAffirmations();
-    fetchSessions();
   }, []);
 
   const fetchAffirmations = async () => {
@@ -146,28 +183,21 @@ export default function Dashboard({ onNavigate }: Props) {
     setPlaying(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const completedTasksCount = tasks.filter(t => t.completed).length;
-  const plantScale = Math.min(1 + (completedTasksCount * 0.05), 1.5);
+  const completedTasksCount = (tasks || []).filter(t => t.completed).length;
 
   const hour = new Date().getHours();
   let greeting = 'Good evening,';
   let weatherIcon = <Moon size={14} className="text-indigo-400" />;
   let weatherText = '65°F Clear';
-  let hydrationText = 'Time for a relaxing evening tea.';
-  let hydrationIcon = <Coffee size={16} className="text-indigo-500" />;
 
   if (hour >= 5 && hour < 12) {
     greeting = 'Good morning,';
     weatherIcon = <Sun size={14} className="text-amber-500" />;
     weatherText = '68°F Sunny';
-    hydrationText = 'Start your day with a glass of water.';
-    hydrationIcon = <Droplets size={16} className="text-blue-500" />;
   } else if (hour >= 12 && hour < 18) {
     greeting = 'Good afternoon,';
     weatherIcon = <CloudSun size={14} className="text-orange-400" />;
     weatherText = '75°F Partly Cloudy';
-    hydrationText = 'Stay hydrated to keep your energy up!';
-    hydrationIcon = <CupSoda size={16} className="text-cyan-500" />;
   }
 
   // Calculate stats for chart
@@ -179,7 +209,7 @@ export default function Dashboard({ onNavigate }: Props) {
   
   const weeklyData = last7Days.map(date => {
     const minutes = sessions
-      .filter(s => s.completed_at.startsWith(date))
+      .filter(s => s.completed_at && s.completed_at.startsWith(date))
       .reduce((sum, s) => sum + s.duration, 0);
     return { date, minutes };
   });
@@ -232,8 +262,8 @@ export default function Dashboard({ onNavigate }: Props) {
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-slate-500 text-sm font-medium">{greeting}</h2>
               <div className="flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/40 shadow-sm">
-                {weatherIcon}
-                <span className="text-xs font-medium text-slate-600">{weatherText}</span>
+                {weather.condition === 'rain' ? <Droplets size={14} className="text-blue-400" /> : weatherIcon}
+                <span className="text-xs font-medium text-slate-600">{weather.temp}°F {weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}</span>
               </div>
             </div>
             {isEditingName ? (
@@ -268,8 +298,16 @@ export default function Dashboard({ onNavigate }: Props) {
                 {/* The Ground / Terrain */}
                 <path d="M20 160 Q200 140 380 160 L380 190 Q200 200 20 190 Z" fill="#4ade80" opacity="0.2" />
                 <path d="M40 165 Q200 150 360 165 L360 185 Q200 195 40 185 Z" fill="#22c55e" opacity="0.3" />
+
+                {/* Rain Animation */}
+                {weather.condition === 'rain' && Array.from({ length: 20 }).map((_, i) => (
+                  <line key={`rain-${i}`} x1={20 + (i * 20)} y1="0" x2={15 + (i * 20)} y2="10" stroke="#0ea5e9" strokeWidth="1" opacity="0.4">
+                    <animate attributeName="y1" from="-20" to="200" dur={`${0.5 + Math.random()}s`} repeatCount="indefinite" />
+                    <animate attributeName="y2" from="-10" to="210" dur={`${0.5 + Math.random()}s`} repeatCount="indefinite" />
+                  </line>
+                ))}
                 
-                {/* Hydration Pond (Reacts to water intake) */}
+                {/* Hydration Pond */}
                 <g transform="translate(280, 165)">
                   <ellipse cx="0" cy="5" rx="60" ry="15" fill="#bae6fd" opacity="0.4" />
                   <ellipse cx="0" cy="5" rx={Math.min(55, (water/hydrationGoal) * 55)} ry={Math.min(12, (water/hydrationGoal) * 12)} fill="#0ea5e9" opacity="0.6">
@@ -277,21 +315,31 @@ export default function Dashboard({ onNavigate }: Props) {
                   </ellipse>
                 </g>
 
-                {/* Completed Task Trees (One for each completed task, max 8 for performance) */}
+                {/* Completed Task Trees */}
                 {Array.from({ length: Math.min(completedTasksCount, 8) }).map((_, i) => {
                   const x = 60 + (i * 35);
                   const scale = 0.8 + (Math.random() * 0.4);
                   return (
                     <g key={`tree-${i}`} transform={`translate(${x}, 165) scale(${scale})`}>
                       <path d="M0 0 L0 -30" stroke="#78350f" strokeWidth="3" strokeLinecap="round" />
-                      <circle cx="0" cy="-35" r="12" fill="#166534" />
-                      <circle cx="-8" cy="-28" r="8" fill="#15803d" />
-                      <circle cx="8" cy="-28" r="8" fill="#15803d" />
+                      <circle cx="0" cy="-35" r="12" fill={weather.condition === 'rain' ? '#064e3b' : '#166534'} />
+                      <circle cx="-8" cy="-28" r="8" fill={weather.condition === 'rain' ? '#065f46' : '#15803d'} />
+                      <circle cx="8" cy="-28" r="8" fill={weather.condition === 'rain' ? '#065f46' : '#15803d'} />
                     </g>
                   );
                 })}
 
-                {/* Focus Session Blooms (Flowers based on session history) */}
+                {/* Focus Streak Birds */}
+                {streak >= 3 && Array.from({ length: Math.min(streak - 2, 5) }).map((_, i) => (
+                  <g key={`bird-${i}`} transform={`translate(0, ${40 + (i * 20)})`}>
+                    <path d="M0 0 Q5 -5 10 0 Q15 -5 20 0" stroke="#475569" strokeWidth="1.5" fill="none">
+                      <animateTransform attributeName="transform" type="translate" from="-50 0" to="450 0" dur={`${8 + (i * 2)}s`} repeatCount="indefinite" />
+                      <animate attributeName="d" values="M0 0 Q5 -5 10 0 Q15 -5 20 0; M0 0 Q5 5 10 0 Q15 5 20 0; M0 0 Q5 -5 10 0 Q15 -5 20 0" dur="0.5s" repeatCount="indefinite" />
+                    </path>
+                  </g>
+                ))}
+
+                {/* Focus Session Blooms */}
                 {sessions.slice(-12).map((session, i) => {
                   const x = 40 + (i * 25) + (Math.sin(i) * 10);
                   const y = 175 + (Math.cos(i) * 5);
@@ -306,7 +354,7 @@ export default function Dashboard({ onNavigate }: Props) {
                   );
                 })}
 
-                {/* Central Focus Core (Glows when timer is active) */}
+                {/* Central Focus Core */}
                 <g transform="translate(200, 120)">
                   {isActive && (
                     <>
@@ -330,14 +378,14 @@ export default function Dashboard({ onNavigate }: Props) {
               </svg>
             </div>
             <p className="text-center text-slate-500 text-xs mt-4 font-mono tracking-widest uppercase opacity-60">
-              {completedTasksCount > 0 ? `Ecosystem Sustained by ${completedTasksCount} Completed Tasks` : "Your garden is waiting for its first seeds."}
+              {streak > 0 ? `Focus Streak: ${streak} | ` : ""}{completedTasksCount > 0 ? `Ecosystem Sustained by ${completedTasksCount} Completed Tasks` : "Your garden is waiting for its first seeds."}
             </p>
           </div>
 
           {/* Bento Grid Layout */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             
-            {/* Primary Bento: Focus Timer (Wide on desktop) */}
+            {/* Primary Bento: Focus Timer */}
             <div 
               onClick={() => onNavigate('focus')}
               className={`md:col-span-2 glass-panel p-6 rounded-[2.5rem] border border-primary/20 shadow-sm flex flex-col justify-between cursor-pointer hover:bg-white/80 transition-all group min-h-[200px] relative overflow-hidden`}
@@ -461,7 +509,7 @@ export default function Dashboard({ onNavigate }: Props) {
             </div>
           </div>
 
-          {/* Action Grid (The small utility circles) */}
+          {/* Action Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pb-10">
             <button onClick={() => onNavigate('focus')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/30 transition-colors">

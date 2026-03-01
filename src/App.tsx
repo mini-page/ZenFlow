@@ -15,13 +15,12 @@ import CreatorStudio from './components/CreatorStudio';
 import { AppProvider, useAppContext } from './AppContext';
 
 import SharedHeader from './components/SharedHeader';
-import { Info } from 'lucide-react';
+import { Info, Timer, Play, Pause, Music, X } from 'lucide-react';
 
 export type View = 'dashboard' | 'focus' | 'breathe' | 'hydrate' | 'tasks' | 'sounds' | 'stretch' | 'studio';
 
 // Global keyboard shortcuts manager
 function KeyboardManager({ currentView, setCurrentView }: { currentView: View, setCurrentView: (v: View) => void }) {
-  // ... (unchanged)
   const { toggleTimer } = useAppContext();
 
   useEffect(() => {
@@ -43,6 +42,65 @@ function KeyboardManager({ currentView, setCurrentView }: { currentView: View, s
   return null;
 }
 
+// Flow Pill Component (Contextual Action Bar)
+function FlowPill({ currentView, setCurrentView }: { currentView: View, setCurrentView: (v: View) => void }) {
+  const { isActive, timeLeft, isBreak, toggleTimer, resetTimer, playing, setPlaying } = useAppContext();
+  
+  const hasActiveSounds = Object.values(playing).some(isPlay => isPlay);
+  
+  // Only show if timer is active or sounds are playing, AND we aren't already looking at the primary controls
+  const shouldShow = (isActive || hasActiveSounds) && currentView !== 'dashboard';
+
+  if (!shouldShow) return null;
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const stopSounds = () => {
+    setPlaying({});
+  };
+
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 fade-in duration-500">
+      <div className="bg-white/90 backdrop-blur-xl border border-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-full px-4 py-2 flex items-center gap-4 text-slate-900">
+        
+        {isActive && (
+          <div className="flex items-center gap-3 pr-4 border-r border-slate-200">
+            <button 
+              onClick={() => setCurrentView('focus')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${isBreak ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-primary/10 text-primary-dark hover:bg-primary/20'}`}
+            >
+              <Timer size={14} className={isActive ? "animate-pulse" : ""} />
+              <span className="font-mono font-bold text-sm tracking-tighter tabular-nums">{formatTime(timeLeft)}</span>
+            </button>
+            <button onClick={toggleTimer} className="text-slate-600 hover:text-slate-900 transition-colors">
+              {isActive ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+            </button>
+          </div>
+        )}
+
+        {hasActiveSounds && (
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setCurrentView('sounds')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
+            >
+              <Music size={14} className="animate-bounce" style={{ animationDuration: '2s' }} />
+              <span className="text-xs font-bold uppercase tracking-wider">Audio</span>
+            </button>
+            <button onClick={stopSounds} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Stop All Sounds">
+              <X size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Global Audio Manager for gapless playback
 function AudioManager() {
   const { sounds, playing, volumes, masterVolume } = useAppContext();
@@ -57,7 +115,7 @@ function AudioManager() {
   };
 
   useEffect(() => {
-    // Clean up audio elements for sounds that were removed (custom sounds deleted)
+    // Clean up audio elements for sounds that were removed
     const currentSoundIds = new Set(sounds.map(s => s.id));
     Object.keys(audioRefs.current).forEach(id => {
       if (!currentSoundIds.has(id)) {
@@ -68,7 +126,7 @@ function AudioManager() {
     });
 
     sounds.forEach(sound => {
-      const url = sound.url || soundUrls[sound.id] || soundUrls['forest-rain']; // Use custom URL or fallback
+      const url = sound.url || soundUrls[sound.id] || soundUrls['forest-rain'];
       if (!audioRefs.current[sound.id]) {
         const audio = new Audio(url);
         audio.loop = true; 
@@ -76,7 +134,6 @@ function AudioManager() {
       }
 
       const audio = audioRefs.current[sound.id];
-      // Update src if it changed (unlikely for built-in, but possible for custom)
       if (sound.url && audio.src !== sound.url) {
         audio.src = sound.url;
       }
@@ -99,11 +156,13 @@ function AudioManager() {
   return null;
 }
 
-export default function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<View>(() => {
     const saved = localStorage.getItem('zenflow_current_view');
     return (saved as View) || 'dashboard';
   });
+
+  const { isActive } = useAppContext();
 
   useEffect(() => {
     localStorage.setItem('zenflow_current_view', currentView);
@@ -132,14 +191,22 @@ export default function App() {
   };
 
   return (
-    <AppProvider>
+    <div className="h-[100dvh] w-full bg-white flex flex-col transition-all duration-1000 overflow-hidden relative">
       <KeyboardManager currentView={currentView} setCurrentView={setCurrentView} />
+      <FlowPill currentView={currentView} setCurrentView={setCurrentView} />
       <AudioManager />
-      <div className="h-[100dvh] w-full bg-white flex flex-col transition-colors duration-300 overflow-hidden">
-        <div className="flex-1 relative overflow-hidden">
-          {renderView()}
-        </div>
+      
+      <div className="flex-1 relative overflow-hidden">
+        {renderView()}
       </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
     </AppProvider>
   );
 }
