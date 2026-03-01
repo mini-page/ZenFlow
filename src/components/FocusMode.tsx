@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Square, Pause, Play, RotateCcw, Edit3, X, Timer, History, Calendar, CheckCircle2, Settings, SkipForward } from 'lucide-react';
+import { ArrowLeft, Square, Pause, Play, RotateCcw, Edit3, X, Timer, History, Calendar, CheckCircle2, Settings, SkipForward, ChevronDown } from 'lucide-react';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
 
@@ -19,7 +19,8 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
     isActive, setIsActive,
     sessionCompleted, setSessionCompleted,
     task, setTask,
-    toggleTimer, resetTimer
+    toggleTimer, resetTimer,
+    tasks, setTasks
   } = useAppContext();
 
   const [showModal, setShowModal] = useState(false);
@@ -28,24 +29,57 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
   const [overlayIcon, setOverlayIcon] = useState<'play' | 'pause' | 'stop' | 'check' | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [completedCycles, setCompletedCycles] = useState<number>(0);
+  const [showTaskDropdown, setShowTaskDropdown] = useState(false);
+  const [showTaskCompletionPrompt, setShowTaskCompletionPrompt] = useState(false);
   const overlayTimeoutRef = useRef<any>(null);
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const triggerNotification = (title: string, body: string) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/icon-192.png' });
+    }
+  };
 
   useEffect(() => {
     if (sessionCompleted) {
       if (isBreak) {
+        // A focus session just ended, we are now in break
         setCompletedCycles(prev => prev + 1);
         setShowCelebration(true);
         setOverlayIcon('check');
+        triggerNotification('Focus Session Complete!', `Time for a ${breakDuration} minute break.`);
+        
+        // Check if the current task exists in the tasks list and is not completed
+        const linkedTask = tasks.find(t => t.text.toLowerCase() === task.toLowerCase() && !t.completed);
+        if (linkedTask) {
+          setShowTaskCompletionPrompt(true);
+        }
+
         if (overlayTimeoutRef.current) clearTimeout(overlayTimeoutRef.current);
         overlayTimeoutRef.current = setTimeout(() => {
           setOverlayIcon(null);
           setShowCelebration(false);
         }, 3000);
-        fetchHistory();
+        
+        // Save session to backend
+        fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ duration: focusDuration, task_name: task })
+        }).then(() => fetchHistory());
+      } else {
+        // A break just ended, back to focus
+        triggerNotification('Break Over!', 'Time to get back to focus.');
       }
       setSessionCompleted(false);
     }
-  }, [sessionCompleted, isBreak]);
+  }, [sessionCompleted, isBreak, tasks, task, breakDuration, focusDuration]);
 
   const fetchHistory = async () => {
     try {
@@ -91,6 +125,13 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
     overlayTimeoutRef.current = setTimeout(() => setOverlayIcon(null), 1000);
   };
 
+  const markTaskCompleted = () => {
+    setTasks(tasks.map(t => t.text.toLowerCase() === task.toLowerCase() ? { ...t, completed: true } : t));
+    setShowTaskCompletionPrompt(false);
+  };
+
+  const uncompletedTasks = tasks.filter(t => !t.completed);
+
   return (
     <div className="flex flex-col h-full w-full p-0 bg-background-light text-sage-900 transition-colors duration-1000 relative overflow-hidden">
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -100,15 +141,47 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
 
       <SharedHeader 
         title="Focus Mode" onBack={onBack} icon={Timer} iconColor={isBreak ? "text-blue-400" : "text-rose-500"}
-        actions={<button onClick={() => { setShowModal(true); setModalTab('history'); }} className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-sage-600 hover:bg-primary/20 transition-all shadow-sm"><History size={20} /></button>}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => { setShowModal(true); setModalTab('history'); }} className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-sage-600 hover:bg-primary/20 transition-all shadow-sm" title="History">
+              <History size={20} />
+            </button>
+            <button onClick={() => { setShowModal(true); setModalTab('settings'); }} className="flex h-10 px-4 items-center gap-2 rounded-xl bg-primary text-forest-deep hover:bg-primary-dark transition-all shadow-sm font-bold text-xs">
+              <Settings size={18} />
+              <span>Configure Timer</span>
+            </button>
+          </div>
+        }
       />
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center w-full overflow-hidden py-4 animate-in fade-in zoom-in-95 duration-1000 p-4">
         <div className="absolute top-4 md:top-8 text-center z-40 w-full h-24 flex flex-col items-center justify-center px-6">
           <div className={`w-full max-w-[400px] transition-all duration-700 ease-in-out ${isActive ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
             <div className="relative group">
-              <input type="text" value={task} onChange={(e) => setTask(e.target.value)} className="w-full bg-white/20 backdrop-blur-sm border-b border-white/40 hover:border-primary/40 focus:border-primary/60 text-center text-sage-800 font-serif font-bold text-xl md:text-2xl outline-none placeholder:text-sage-500/40 transition-all py-2 pr-8" placeholder="What is your motive?" />
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 text-sage-400"><Edit3 size={16} /></div>
+              <input 
+                type="text" 
+                value={task} 
+                onChange={(e) => setTask(e.target.value)} 
+                onFocus={() => setShowTaskDropdown(true)}
+                onBlur={() => setTimeout(() => setShowTaskDropdown(false), 200)}
+                className="w-full bg-white/20 backdrop-blur-sm border-b border-white/40 hover:border-primary/40 focus:border-primary/60 text-center text-sage-800 font-serif font-bold text-xl md:text-2xl outline-none placeholder:text-sage-500/40 transition-all py-2 pr-8" 
+                placeholder="What is your motive?" 
+              />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 text-sage-400 cursor-pointer" onClick={() => setShowTaskDropdown(!showTaskDropdown)}><ChevronDown size={20} /></div>
+              
+              {showTaskDropdown && uncompletedTasks.length > 0 && (
+                <div className="absolute top-full mt-2 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-sage-100 py-2 z-50 text-left">
+                  {uncompletedTasks.map(t => (
+                    <div 
+                      key={t.id} 
+                      className="px-4 py-2 hover:bg-primary/10 cursor-pointer text-sage-700 text-sm truncate"
+                      onClick={() => { setTask(t.text); setShowTaskDropdown(false); }}
+                    >
+                      {t.text}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className={`absolute w-full flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
@@ -167,8 +240,25 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
         </div>
       </nav>
 
+      {/* Task Completion Prompt Modal */}
+      {showTaskCompletionPrompt && (
+        <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 p-8 text-center">
+            <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary-dark">
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-sage-900 mb-2">Great Focus!</h3>
+            <p className="text-sage-600 text-sm mb-6">Did you complete "{task}" during this session?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowTaskCompletionPrompt(false)} className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition-colors">Not Yet</button>
+              <button onClick={markTaskCompleted} className="flex-1 py-3 rounded-xl bg-primary text-forest-deep font-bold hover:bg-primary-dark transition-colors">Yes, Done!</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
-        <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div className="absolute inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
           <div className="bg-background-light w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[80%] animate-in slide-in-from-bottom-10">
             <div className="p-6 border-b border-sage-200 flex justify-between items-center shrink-0">
               <h3 className="font-bold text-lg text-sage-900">{modalTab === 'settings' ? 'Timer Settings' : 'Focus History'}</h3>
@@ -179,13 +269,37 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-sage-700 mb-2">Focus Duration (minutes)</label>
-                    <input type="number" value={focusDuration} onChange={(e) => setFocusDuration(Math.max(1, parseInt(e.target.value) || 25))} className="w-full bg-white/50 border border-sage-200 rounded-xl px-4 py-3 outline-none" />
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="range" min="1" max="120" 
+                        value={focusDuration} 
+                        onChange={(e) => setFocusDuration(parseInt(e.target.value))}
+                        className="flex-1 accent-primary" 
+                      />
+                      <span className="w-12 text-right font-bold text-sage-900">{focusDuration}m</span>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-sage-700 mb-2">Break Duration (minutes)</label>
-                    <input type="number" value={breakDuration} onChange={(e) => setBreakDuration(Math.max(1, parseInt(e.target.value) || 5))} className="w-full bg-white/50 border border-sage-200 rounded-xl px-4 py-3 outline-none" />
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="range" min="1" max="30" 
+                        value={breakDuration} 
+                        onChange={(e) => setBreakDuration(parseInt(e.target.value))}
+                        className="flex-1 accent-blue-400" 
+                      />
+                      <span className="w-12 text-right font-bold text-sage-900">{breakDuration}m</span>
+                    </div>
                   </div>
-                  <button onClick={() => setShowModal(false)} className="w-full py-4 rounded-2xl bg-slate-900 text-white font-bold">Save Changes</button>
+                  <div className="pt-4 border-t border-sage-100">
+                    <p className="text-[10px] text-sage-400 uppercase font-black tracking-widest mb-4 text-center">Quick Presets</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[15, 25, 45].map(m => (
+                        <button key={m} onClick={() => setFocusDuration(m)} className={`py-2 rounded-xl text-xs font-bold transition-all ${focusDuration === m ? 'bg-primary text-forest-deep' : 'bg-sage-50 text-sage-500 hover:bg-sage-100'}`}>{m}m</button>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={() => setShowModal(false)} className="w-full py-4 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all">Apply Settings</button>
                 </div>
               ) : (
                 <div className="space-y-4">

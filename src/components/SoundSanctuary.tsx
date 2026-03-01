@@ -1,20 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Play, Pause, Volume2, StopCircle, Upload, ArrowLeft, Heart, Repeat, Shuffle, Plus, Music, Search, X, AlertCircle, Headphones, Cloud, Sparkles, Rocket, Waves, Flame, Coffee, Train } from 'lucide-react';
+import { Settings, Play, Pause, Volume2, StopCircle, Upload, ArrowLeft, Heart, Repeat, Shuffle, Plus, Music, Search, X, AlertCircle, Headphones, Cloud, Sparkles, Rocket, Waves, Flame, Coffee, Train, Trash2 } from 'lucide-react';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
 
 const CATEGORIES = ['All', 'Nature', 'Atmospheric', 'Urban', 'Meditation', 'Favorites', 'Custom'];
 
 export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
-  const { sounds, setPlaying, playing, volumes, setVolumes } = useAppContext();
+  const { sounds, setPlaying, playing, volumes, setVolumes, customSounds, addCustomSound, deleteCustomSound, masterVolume, setMasterVolume } = useAppContext();
   
-  const [masterVolume, setMasterVolume] = useState(80);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set(['forest-rain', 'lofi-stream']));
   const [isShuffle, setIsShuffle] = useState(false);
   const [mixWithFocus, setMixWithFocus] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSoundName, setNewSoundName] = useState('');
+  const [newSoundFile, setNewSoundFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [customImages, setCustomImages] = useState<Record<string, string>>({});
   
@@ -23,6 +26,31 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
     if (volumes[id] === undefined) {
       setVolumes(prev => ({ ...prev, [id]: 60 }));
     }
+  };
+
+  const handleAddCustomSound = async () => {
+    if (!newSoundName || !newSoundFile) return;
+    setIsUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const url = e.target?.result as string;
+      addCustomSound({
+        id: `custom-${Date.now()}`,
+        name: newSoundName,
+        category: 'Custom',
+        description: 'User uploaded soundscape',
+        icon: 'music_note',
+        defaultImage: 'https://images.unsplash.com/photo-1514826786317-59744fe2a548?auto=format&fit=crop&w=400&q=80',
+        url: url,
+        isCustom: true
+      });
+      setIsUploading(false);
+      setShowAddModal(false);
+      setNewSoundName('');
+      setNewSoundFile(null);
+    };
+    reader.readAsDataURL(newSoundFile);
   };
 
   const stopAll = () => {
@@ -53,6 +81,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
   });
 
   const getGradient = (id: string) => {
+    if (id.startsWith('custom-')) return 'from-indigo-400 to-cyan-400';
     const gradients: Record<string, string> = {
       'forest-rain': 'from-green-200 to-emerald-500',
       'summer-meadow': 'from-yellow-100 to-orange-300',
@@ -77,11 +106,11 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
         icon={Music} 
         actions={
           <div className="flex gap-2">
+            <button onClick={() => setShowAddModal(true)} className="size-10 flex items-center justify-center rounded-xl bg-primary text-forest-deep hover:bg-primary-dark transition-all shadow-sm">
+              <Plus size={20} />
+            </button>
             <button onClick={() => setIsSearching(!isSearching)} className={`size-10 flex items-center justify-center rounded-xl transition-all ${isSearching ? 'bg-primary text-forest-deep' : 'bg-white/50 hover:bg-primary/20'}`}>
               <Search size={20} />
-            </button>
-            <button className="hidden sm:flex size-10 items-center justify-center rounded-xl bg-white/50 text-forest-deep hover:bg-primary/20 transition-all">
-              <Settings size={20} />
             </button>
           </div>
         }
@@ -92,11 +121,22 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
           
           {/* Hero Section */}
           <div className="flex flex-col gap-2 mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
-            <h1 className="text-forest-deep text-4xl md:text-5xl font-serif font-bold leading-tight tracking-tight">Sound Sanctuary</h1>
-            <p className="text-forest-muted text-lg font-normal">Curated ambient layers for your deep work sessions.</p>
+            <div className="flex justify-between items-end">
+              <div>
+                <h1 className="text-forest-deep text-4xl md:text-5xl font-serif font-bold leading-tight tracking-tight">Sound Sanctuary</h1>
+                <p className="text-forest-muted text-lg font-normal">Curated ambient layers for your deep work sessions.</p>
+              </div>
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="hidden md:flex items-center gap-2 bg-white/60 backdrop-blur-md border border-white/50 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-primary transition-all active:scale-95 shadow-sm"
+              >
+                <Plus size={18} />
+                Add Your Own Sound
+              </button>
+            </div>
           </div>
 
-          {/* Search Bar (Responsive) */}
+          {/* ... (Search and Filter bars unchanged) */}
           {isSearching && (
             <div className="mb-8 animate-in slide-in-from-top-2 fade-in duration-300">
               <div className="relative flex items-center max-w-md">
@@ -118,7 +158,6 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
             </div>
           )}
 
-          {/* Filter Bar */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
             <div className="flex p-1 bg-white/40 backdrop-blur-md rounded-xl border border-white/50 overflow-x-auto scrollbar-hide max-w-full">
               {CATEGORIES.map(cat => (
@@ -145,9 +184,23 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
 
           {/* Sound Grid */}
           {filteredSounds.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-forest-muted opacity-50">
-              <Music size={48} strokeWidth={1} className="mb-4" />
-              <p className="text-lg">No soundscapes found.</p>
+            <div className="flex flex-col items-center justify-center py-20 text-forest-muted">
+              <Music size={64} strokeWidth={1} className="mb-6 opacity-20" />
+              <h3 className="text-xl font-bold mb-2">No soundscapes found</h3>
+              <p className="text-sm opacity-60 mb-8 max-w-xs text-center">
+                {activeCategory === 'Custom' 
+                  ? "You haven't uploaded any personal soundscapes yet. Use the '+' button to add your favorite MP3s."
+                  : "Try adjusting your search or category filters to find what you're looking for."}
+              </p>
+              {activeCategory === 'Custom' && (
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="px-8 py-3 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-md flex items-center gap-2"
+                >
+                  <Plus size={20} />
+                  Add Your First Custom Sound
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -165,6 +218,11 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
                       <button onClick={() => toggleFavorite(sound.id)} className={`p-2 rounded-full backdrop-blur-md transition-colors ${favorites.has(sound.id) ? 'bg-rose-500 text-white' : 'bg-white/30 text-forest-deep hover:bg-white/60'}`}>
                         <Heart size={14} className={favorites.has(sound.id) ? 'fill-current' : ''} />
                       </button>
+                      {sound.isCustom && (
+                        <button onClick={() => deleteCustomSound(sound.id)} className="p-2 rounded-full backdrop-blur-md bg-white/30 text-forest-deep hover:bg-red-500 hover:text-white transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
 
                     {/* Play Button */}
@@ -181,7 +239,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-serif font-bold text-xl text-forest-deep leading-tight">{sound.name}</h3>
+                        <h3 className="font-serif font-bold text-xl text-forest-deep leading-tight truncate max-w-[150px]">{sound.name}</h3>
                         <p className="text-[10px] font-bold text-forest-muted uppercase tracking-widest mt-1">{sound.category}</p>
                       </div>
                       <span className="material-symbols-outlined text-forest-muted opacity-50">
@@ -217,6 +275,57 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
           <div className="h-24"></div> {/* Spacer for sticky footer */}
         </div>
       </main>
+
+      {/* Add Custom Sound Modal */}
+      {showAddModal && (
+        <div className="absolute inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-forest-deep">Add Custom Sound</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-sage-500"><X size={20} /></button>
+            </div>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-forest-muted mb-2">Sound Name</label>
+                <input 
+                  type="text" 
+                  value={newSoundName}
+                  onChange={(e) => setNewSoundName(e.target.value)}
+                  placeholder="e.g., My Favorite Rain"
+                  className="w-full bg-sage-50 border border-sage-100 rounded-xl px-4 py-3 outline-none focus:border-primary"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-forest-muted mb-2">Audio File</label>
+                <div className="relative group">
+                  <input 
+                    type="file" 
+                    accept="audio/*"
+                    onChange={(e) => setNewSoundFile(e.target.files?.[0] || null)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="w-full border-2 border-dashed border-sage-200 rounded-xl p-8 flex flex-col items-center justify-center gap-2 group-hover:border-primary transition-colors bg-sage-50/50">
+                    <Upload className="text-sage-400 group-hover:text-primary" size={32} />
+                    <span className="text-sm font-medium text-sage-600 truncate max-w-full px-4">
+                      {newSoundFile ? newSoundFile.name : 'Click to select audio'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleAddCustomSound}
+                disabled={!newSoundName || !newSoundFile || isUploading}
+                className={`w-full py-4 rounded-2xl font-bold text-white transition-all ${!newSoundName || !newSoundFile || isUploading ? 'bg-slate-300' : 'bg-slate-900 hover:bg-slate-800 active:scale-95'}`}
+              >
+                {isUploading ? 'Processing...' : 'Add to Sanctuary'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Master Control Bar */}
       <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">

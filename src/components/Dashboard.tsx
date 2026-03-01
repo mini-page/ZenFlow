@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility } from 'lucide-react';
+import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, RotateCcw } from 'lucide-react';
 import { View } from '../App';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
@@ -8,6 +8,13 @@ interface Affirmation {
   id: number;
   text: string;
   is_custom: number;
+}
+
+interface FocusSession {
+  id: number;
+  duration: number;
+  task_name: string;
+  completed_at: string;
 }
 
 interface Props {
@@ -32,8 +39,10 @@ export default function Dashboard({ onNavigate }: Props) {
   const [currentAffirmationIndex, setCurrentAffirmationIndex] = useState(0);
   const [showAffirmationModal, setShowAffirmationModal] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [newAffirmation, setNewAffirmation] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [sessions, setSessions] = useState<FocusSession[]>([]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -59,6 +68,7 @@ export default function Dashboard({ onNavigate }: Props) {
 
   useEffect(() => {
     fetchAffirmations();
+    fetchSessions();
   }, []);
 
   const fetchAffirmations = async () => {
@@ -82,6 +92,16 @@ export default function Dashboard({ onNavigate }: Props) {
       }
     } catch (error) {
       console.error('Failed to fetch affirmations:', error);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch('/api/sessions');
+      const data = await res.json();
+      setSessions(data);
+    } catch (e) {
+      console.error('Failed to fetch sessions:', e);
     }
   };
 
@@ -150,6 +170,33 @@ export default function Dashboard({ onNavigate }: Props) {
     hydrationIcon = <CupSoda size={16} className="text-cyan-500" />;
   }
 
+  // Calculate stats for chart
+  const last7Days = Array.from({length: 7}, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return d.toISOString().split('T')[0];
+  });
+  
+  const weeklyData = last7Days.map(date => {
+    const minutes = sessions
+      .filter(s => s.completed_at.startsWith(date))
+      .reduce((sum, s) => sum + s.duration, 0);
+    return { date, minutes };
+  });
+  const maxMinutes = Math.max(...weeklyData.map(d => d.minutes), 60);
+
+  const forceUpdate = async () => {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+      }
+    }
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+    window.location.reload();
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-300 relative overflow-hidden">
       {/* Background Elements: Morning Sun & Clouds */}
@@ -162,6 +209,12 @@ export default function Dashboard({ onNavigate }: Props) {
         showDashboardLink={false}
         actions={
           <div className="flex items-center gap-2">
+            <button onClick={forceUpdate} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-rose-500 group" title="Refresh & Update App">
+              <RotateCcw size={20} className="group-hover:rotate-[-180deg] transition-transform duration-500" />
+            </button>
+            <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group">
+              <BarChart3 size={20} className="group-hover:scale-110 transition-transform" />
+            </button>
             <button onClick={() => setShowQuickActions(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-amber-500 group">
               <Zap size={20} className="group-hover:scale-110 transition-transform" />
             </button>
@@ -208,21 +261,77 @@ export default function Dashboard({ onNavigate }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col">
-          {/* Hero Section: The Garden */}
-          <div className="flex flex-col items-center justify-center relative mb-8 shrink-0">
-            <div className="relative w-48 h-48 flex items-end justify-center animate-float">
-              <svg className="w-full h-full drop-shadow-lg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M60 140 L140 140 L130 190 H70 L60 140Z" fill="#E8B895" stroke="#2C3A2C" strokeWidth="2" strokeLinejoin="round"/>
-                <path d="M55 135 H145 L140 140 H60 L55 135Z" fill="#D6A683" stroke="#2C3A2C" strokeWidth="2" strokeLinejoin="round"/>
-                <g style={{ transform: `scale(${plantScale})`, transformOrigin: '100px 140px', transition: 'transform 1s ease-in-out' }}>
-                  <path d="M100 140 Q100 100 100 90" stroke="#13ec13" strokeWidth="4" strokeLinecap="round"/>
-                  <path d="M100 110 Q70 100 60 70 Q80 80 100 105" fill="#13ec13" stroke="#0ea60e" strokeWidth="1.5"/>
-                  <path d="M100 100 Q130 90 140 60 Q120 70 100 95" fill="#13ec13" stroke="#0ea60e" strokeWidth="1.5"/>
-                  <circle cx="100" cy="50" r="8" fill="#FFB7B2"/>
+          {/* Hero Section: The Living Garden */}
+          <div className="flex flex-col items-center justify-center relative mb-8 shrink-0 py-4">
+            <div className="relative w-full max-w-[500px] h-64 flex items-end justify-center animate-in fade-in zoom-in duration-1000">
+              <svg className="w-full h-full drop-shadow-2xl overflow-visible" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* The Ground / Terrain */}
+                <path d="M20 160 Q200 140 380 160 L380 190 Q200 200 20 190 Z" fill="#4ade80" opacity="0.2" />
+                <path d="M40 165 Q200 150 360 165 L360 185 Q200 195 40 185 Z" fill="#22c55e" opacity="0.3" />
+                
+                {/* Hydration Pond (Reacts to water intake) */}
+                <g transform="translate(280, 165)">
+                  <ellipse cx="0" cy="5" rx="60" ry="15" fill="#bae6fd" opacity="0.4" />
+                  <ellipse cx="0" cy="5" rx={Math.min(55, (water/hydrationGoal) * 55)} ry={Math.min(12, (water/hydrationGoal) * 12)} fill="#0ea5e9" opacity="0.6">
+                    <animate attributeName="ry" values="10;12;10" dur="3s" repeatCount="indefinite" />
+                  </ellipse>
                 </g>
+
+                {/* Completed Task Trees (One for each completed task, max 8 for performance) */}
+                {Array.from({ length: Math.min(completedTasksCount, 8) }).map((_, i) => {
+                  const x = 60 + (i * 35);
+                  const scale = 0.8 + (Math.random() * 0.4);
+                  return (
+                    <g key={`tree-${i}`} transform={`translate(${x}, 165) scale(${scale})`}>
+                      <path d="M0 0 L0 -30" stroke="#78350f" strokeWidth="3" strokeLinecap="round" />
+                      <circle cx="0" cy="-35" r="12" fill="#166534" />
+                      <circle cx="-8" cy="-28" r="8" fill="#15803d" />
+                      <circle cx="8" cy="-28" r="8" fill="#15803d" />
+                    </g>
+                  );
+                })}
+
+                {/* Focus Session Blooms (Flowers based on session history) */}
+                {sessions.slice(-12).map((session, i) => {
+                  const x = 40 + (i * 25) + (Math.sin(i) * 10);
+                  const y = 175 + (Math.cos(i) * 5);
+                  return (
+                    <g key={`bloom-${session.id}`} transform={`translate(${x}, ${y}) scale(0.6)`}>
+                      <path d="M0 0 L0 -10" stroke="#16a34a" strokeWidth="1.5" />
+                      <circle cx="0" cy="-12" r="4" fill="#fb7185" />
+                      <circle cx="-3" cy="-15" r="3" fill="#fda4af" opacity="0.8" />
+                      <circle cx="3" cy="-15" r="3" fill="#fda4af" opacity="0.8" />
+                      <circle cx="0" cy="-18" r="3" fill="#fda4af" opacity="0.8" />
+                    </g>
+                  );
+                })}
+
+                {/* Central Focus Core (Glows when timer is active) */}
+                <g transform="translate(200, 120)">
+                  {isActive && (
+                    <>
+                      <circle cx="0" cy="0" r="40" fill="url(#focusGlow)" opacity="0.3">
+                        <animate attributeName="r" values="35;45;35" dur="2s" repeatCount="indefinite" />
+                      </circle>
+                      <circle cx="0" cy="0" r="15" fill="#13ec13">
+                        <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
+                      </circle>
+                    </>
+                  )}
+                  {!isActive && <circle cx="0" cy="45" r="5" fill="#cbd5e1" />}
+                </g>
+
+                <defs>
+                  <radialGradient id="focusGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#13ec13" />
+                    <stop offset="100%" stopColor="#13ec13" stopOpacity="0" />
+                  </radialGradient>
+                </defs>
               </svg>
             </div>
-            <p className="text-center text-slate-500 text-sm mt-2 font-medium">Your garden is thriving today.</p>
+            <p className="text-center text-slate-500 text-xs mt-4 font-mono tracking-widest uppercase opacity-60">
+              {completedTasksCount > 0 ? `Ecosystem Sustained by ${completedTasksCount} Completed Tasks` : "Your garden is waiting for its first seeds."}
+            </p>
           </div>
 
           {/* Bento Grid Layout */}
@@ -422,6 +531,54 @@ export default function Dashboard({ onNavigate }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Stats Modal */}
+      {showStatsModal && (
+        <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="bg-background-light w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10">
+            <div className="p-6 border-b border-sage-200 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><BarChart3 size={18} /></div>
+                <h3 className="font-bold text-lg text-slate-900">Garden Stats</h3>
+              </div>
+              <button onClick={() => setShowStatsModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto custom-scrollbar">
+              <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">Weekly Focus</h4>
+              <div className="flex items-end justify-between h-40 gap-2 mb-4">
+                {weeklyData.map((d, i) => {
+                  const height = Math.max((d.minutes / maxMinutes) * 100, 5);
+                  const isToday = i === 6;
+                  const dayName = new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' });
+                  return (
+                    <div key={d.date} className="flex flex-col items-center flex-1 group relative">
+                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] py-1 px-2 rounded-md whitespace-nowrap z-10 pointer-events-none">
+                        {d.minutes} mins
+                      </div>
+                      <div className={`w-full rounded-t-md transition-all duration-500 ${isToday ? 'bg-primary' : 'bg-primary/40 group-hover:bg-primary/60'}`} style={{ height: `${height}%` }}></div>
+                      <span className={`text-[10px] mt-2 ${isToday ? 'font-bold text-slate-900' : 'font-medium text-slate-400'}`}>{dayName}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <div className="bg-white rounded-2xl p-4 border border-sage-100 shadow-sm">
+                  <p className="text-xs text-slate-500 font-bold uppercase mb-1">Total Focus</p>
+                  <p className="text-2xl font-black text-slate-900">{sessions.reduce((sum, s) => sum + s.duration, 0)} <span className="text-sm font-normal text-slate-400">mins</span></p>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-sage-100 shadow-sm">
+                  <p className="text-xs text-slate-500 font-bold uppercase mb-1">Blooms</p>
+                  <p className="text-2xl font-black text-slate-900">{sessions.length} <span className="text-sm font-normal text-slate-400">sessions</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Affirmation Modal */}
       {showAffirmationModal && (

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { db } from './utils/db';
 
 export interface Task {
   id: string;
@@ -16,6 +17,8 @@ export interface Sound {
   description: string;
   icon: string;
   defaultImage: string;
+  url?: string;
+  isCustom?: boolean;
 }
 
 export interface BreathingPattern {
@@ -64,6 +67,9 @@ interface AppContextType {
   // Sounds State
   sounds: Sound[];
   setSounds: (sounds: Sound[] | ((prev: Sound[]) => Sound[])) => void;
+  customSounds: Sound[];
+  addCustomSound: (sound: Sound) => void;
+  deleteCustomSound: (id: string) => void;
   playing: Record<string, boolean>;
   setPlaying: (playing: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void;
   volumes: Record<string, number>;
@@ -86,6 +92,65 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
+  // Custom Sounds
+  const [customSounds, setCustomSounds] = useState<Sound[]>([]);
+
+  useEffect(() => {
+    const loadCustomSounds = async () => {
+      try {
+        const saved = await db.getAllSounds();
+        setCustomSounds(saved);
+      } catch (e) {
+        console.error('Failed to load custom sounds:', e);
+      }
+    };
+    loadCustomSounds();
+  }, []);
+
+  const addCustomSound = async (sound: Sound) => {
+    const newSound = { ...sound, isCustom: true };
+    setCustomSounds(prev => [...prev, newSound]);
+    try {
+      await db.saveSound(newSound);
+    } catch (e) {
+      console.error('Failed to save custom sound:', e);
+    }
+  };
+
+  const deleteCustomSound = async (id: string) => {
+    setCustomSounds(prev => prev.filter(s => s.id !== id));
+    setPlaying(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    try {
+      await db.deleteSound(id);
+    } catch (e) {
+      console.error('Failed to delete custom sound:', e);
+    }
+  };
+
+  // Built-in Sounds list
+  const builtInSounds: Sound[] = [
+    { id: 'forest-rain', name: 'Forest Rain', category: 'Nature', description: 'Gentle rain in a dense forest', icon: 'rainy', defaultImage: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=400&q=80' },
+    { id: 'summer-meadow', name: 'Summer Meadow', category: 'Nature', description: 'Warm breeze and insects', icon: 'grass', defaultImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=400&q=80' },
+    { id: 'ocean-waves', name: 'Ocean Waves', category: 'Nature', description: 'Calming beach waves', icon: 'water', defaultImage: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=400&q=80' },
+    { id: 'crackling-fire', name: 'Crackling Fire', category: 'Nature', description: 'Warm campfire embers', icon: 'local_fire_department', defaultImage: 'https://images.unsplash.com/photo-1525905384812-7013e2008e3b?auto=format&fit=crop&w=400&q=80' },
+    { id: 'lofi-stream', name: 'Lo-fi Stream', category: 'Urban', description: 'Chill beats to focus to', icon: 'headset', defaultImage: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=400&q=80' },
+    { id: 'city-cafe', name: 'City Cafe', category: 'Urban', description: 'Bustling coffee shop chatter', icon: 'local_cafe', defaultImage: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=400&q=80' },
+    { id: 'train-journey', name: 'Train Journey', category: 'Urban', description: 'Rhythmic train tracks', icon: 'train', defaultImage: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=400&q=80' },
+    { id: 'deep-space', name: 'Deep Space', category: 'Meditation', description: 'Low frequency cosmic drone', icon: 'rocket_launch', defaultImage: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=400&q=80' },
+    { id: 'tibetan-bowls', name: 'Tibetan Bowls', category: 'Meditation', description: 'Resonant singing bowls', icon: 'self_improvement', defaultImage: 'https://images.unsplash.com/photo-1515023115689-589c33041d3c?auto=format&fit=crop&w=400&q=80' },
+    { id: 'wind-chimes', name: 'Wind Chimes', category: 'Meditation', description: 'Gentle bamboo chimes', icon: 'air', defaultImage: 'https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&w=400&q=80' },
+  ];
+
+  const [sounds, setSounds] = useState<Sound[]>(() => [...builtInSounds, ...customSounds]);
+
+  useEffect(() => {
+    setSounds([...builtInSounds, ...customSounds]);
+  }, [customSounds]);
+
   // Hydration
   const [water, setWater] = useState(() => {
     const saved = localStorage.getItem('zenflow_water');
@@ -232,19 +297,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('zenflow_tasks', JSON.stringify(tasks));
   }, [tasks]);
 
-  // Sounds
-  const [sounds, setSounds] = useState<Sound[]>([
-    { id: 'forest-rain', name: 'Forest Rain', category: 'Nature', description: 'Gentle rain in a dense forest', icon: 'rainy', defaultImage: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=400&q=80' },
-    { id: 'summer-meadow', name: 'Summer Meadow', category: 'Nature', description: 'Warm breeze and insects', icon: 'grass', defaultImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=400&q=80' },
-    { id: 'ocean-waves', name: 'Ocean Waves', category: 'Nature', description: 'Calming beach waves', icon: 'water', defaultImage: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=400&q=80' },
-    { id: 'crackling-fire', name: 'Crackling Fire', category: 'Nature', description: 'Warm campfire embers', icon: 'local_fire_department', defaultImage: 'https://images.unsplash.com/photo-1525905384812-7013e2008e3b?auto=format&fit=crop&w=400&q=80' },
-    { id: 'lofi-stream', name: 'Lo-fi Stream', category: 'Urban', description: 'Chill beats to focus to', icon: 'headset', defaultImage: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=400&q=80' },
-    { id: 'city-cafe', name: 'City Cafe', category: 'Urban', description: 'Bustling coffee shop chatter', icon: 'local_cafe', defaultImage: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=400&q=80' },
-    { id: 'train-journey', name: 'Train Journey', category: 'Urban', description: 'Rhythmic train tracks', icon: 'train', defaultImage: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=400&q=80' },
-    { id: 'deep-space', name: 'Deep Space', category: 'Meditation', description: 'Low frequency cosmic drone', icon: 'rocket_launch', defaultImage: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=400&q=80' },
-    { id: 'tibetan-bowls', name: 'Tibetan Bowls', category: 'Meditation', description: 'Resonant singing bowls', icon: 'self_improvement', defaultImage: 'https://images.unsplash.com/photo-1515023115689-589c33041d3c?auto=format&fit=crop&w=400&q=80' },
-    { id: 'wind-chimes', name: 'Wind Chimes', category: 'Meditation', description: 'Gentle bamboo chimes', icon: 'air', defaultImage: 'https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&w=400&q=80' },
-  ]);
+  // Sounds (Cleanup: remove previous built-in list from state initialization if any)
   const [playing, setPlaying] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('zenflow_playing');
     return saved ? JSON.parse(saved) : {};
@@ -293,6 +346,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       toggleTimer, resetTimer,
       tasks, setTasks,
       sounds, setSounds,
+      customSounds, addCustomSound, deleteCustomSound,
       playing, setPlaying,
       volumes, setVolumes,
       masterVolume, setMasterVolume,

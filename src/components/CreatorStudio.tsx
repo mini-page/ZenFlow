@@ -10,7 +10,7 @@ export default function CreatorStudio({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Studio" 
         onBack={onBack} 
-        icon={Code || Cpu} 
+        icon={Cpu} 
         iconColor="text-primary"
         actions={
           <button className="hidden sm:flex items-center justify-center h-10 px-6 rounded-full bg-primary hover:bg-primary/90 text-background-dark text-sm font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(19,236,19,0.3)]">
