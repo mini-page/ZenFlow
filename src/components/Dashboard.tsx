@@ -345,31 +345,6 @@ export default function Dashboard({ onNavigate }: Props) {
                 <ChevronRight size={20} className="text-slate-300" />
               </div>
             </div>
-
-            {/* Stats Pills integrated into the bottom or as a mini Bento row */}
-            <div className="md:col-span-3 flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              <div className="flex items-center gap-3 bg-white border border-white shadow-soft px-6 py-4 rounded-[2rem] flex-1 justify-center group hover:scale-[1.02] transition-transform">
-                <div className="p-2 rounded-xl bg-primary/10 text-primary-dark"><Timer size={20} /></div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-black text-slate-900">45m</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Focused</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 bg-white border border-white shadow-soft px-6 py-4 rounded-[2rem] flex-1 justify-center group hover:scale-[1.02] transition-transform">
-                <div className="p-2 rounded-xl bg-blue-50 text-blue-500"><Droplets size={20} /></div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-black text-slate-900">600ml</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Hydrated</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 bg-white border border-white shadow-soft px-6 py-4 rounded-[2rem] flex-1 justify-center group hover:scale-[1.02] transition-transform">
-                <div className="p-2 rounded-xl bg-amber-50 text-amber-600"><CheckCircle2 size={20} /></div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-black text-slate-900">3/5</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Planted</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Action Grid (The small utility circles) */}

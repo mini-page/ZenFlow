@@ -218,56 +218,55 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
         </div>
       </main>
 
-      {/* Sticky Master Footer */}
-      <footer className="mt-auto glass-panel border-t border-forest-deep/5 px-6 md:px-10 py-6 sticky bottom-0 z-50">
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+      {/* Floating Master Control Bar */}
+      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+        <div className="glass-panel px-6 py-3 rounded-full flex items-center gap-6 shadow-2xl border-white/40 backdrop-blur-xl">
           
-          {/* Master Volume */}
-          <div className="flex items-center gap-4 min-w-full md:min-w-[350px]">
-            <Volume2 className="text-forest-muted" size={20} />
-            <div className="relative flex-1 h-2 bg-forest-deep/10 rounded-full cursor-pointer group">
+          {/* Master Volume Slider (Compact) */}
+          <div className="flex items-center gap-3 bg-slate-100/50 px-4 py-2 rounded-full border border-white/40 group">
+            <Volume2 size={16} className="text-forest-muted group-hover:text-primary transition-colors" />
+            <div className="relative w-24 h-1.5 bg-forest-deep/10 rounded-full cursor-pointer overflow-hidden">
               <div className="absolute inset-y-0 left-0 bg-forest-deep transition-all" style={{ width: `${masterVolume}%` }}></div>
-              <div 
-                className="absolute top-1/2 -translate-y-1/2 size-4 bg-forest-deep rounded-full shadow-md group-hover:scale-125 transition-transform"
-                style={{ left: `${masterVolume}%` }}
-              ></div>
               <input 
-                type="range" 
-                min="0" max="100" 
-                value={masterVolume}
+                type="range" min="0" max="100" value={masterVolume}
                 onChange={(e) => setMasterVolume(parseInt(e.target.value))}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
             </div>
-            <span className="text-sm font-bold text-forest-deep w-10">{masterVolume}%</span>
+            <span className="text-[10px] font-black text-forest-deep w-6">{masterVolume}%</span>
           </div>
 
-          {/* Now Playing & Global Actions */}
-          <div className="flex items-center gap-6">
+          <div className="w-px h-8 bg-slate-200 mx-1"></div>
+
+          {/* Global Actions */}
+          <div className="flex items-center gap-4">
             {nowPlayingName && (
-              <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-bold text-forest-muted tracking-widest uppercase">Now Playing</span>
-                  <span className="text-sm font-serif font-bold text-forest-deep">{nowPlayingName}{activeSounds.length > 1 ? ` + ${activeSounds.length - 1} more` : ''}</span>
-                </div>
-                <div className="size-10 rounded-full border-2 border-primary border-t-transparent animate-spin-slow flex items-center justify-center text-primary">
-                  <Headphones size={18} />
-                </div>
+              <div className="hidden md:flex flex-col items-end mr-2 animate-in fade-in slide-in-from-right-4">
+                <span className="text-[8px] font-black text-forest-muted uppercase tracking-widest">Active</span>
+                <span className="text-[10px] font-serif font-bold text-forest-deep max-w-[100px] truncate">{nowPlayingName}</span>
               </div>
             )}
-            
-            <div className="hidden md:block h-10 w-[1px] bg-forest-deep/10"></div>
-            
+
             <button 
               onClick={stopAll}
-              className="flex items-center gap-2 bg-forest-deep text-white px-6 py-2.5 rounded-xl font-bold hover:bg-forest-deep/90 transition-all active:scale-95 shadow-lg shadow-forest-deep/10"
+              className="size-12 rounded-full bg-forest-deep text-white flex items-center justify-center shadow-lg hover:bg-forest-deep/90 hover:scale-105 active:scale-95 transition-all"
+              title="Stop All"
             >
-              <StopCircle size={20} />
-              <span>Stop All</span>
+              <StopCircle size={24} />
+            </button>
+
+            <button 
+              onClick={onBack}
+              className="flex flex-col items-center gap-1 group"
+            >
+              <div className="size-10 rounded-full bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 transition-all">
+                <X size={18} className="text-rose-500" />
+              </div>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-rose-400">Back</span>
             </button>
           </div>
         </div>
-      </footer>
+      </nav>
 
       {/* Styles for the slow spin */}
       <style>{`

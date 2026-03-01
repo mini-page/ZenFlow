@@ -13,10 +13,21 @@ import SoundSanctuary from './components/SoundSanctuary';
 import StretchBreak from './components/StretchBreak';
 import { AppProvider } from './AppContext';
 
-export type View = 'dashboard' | 'focus' | 'breathe' | 'hydrate' | 'tasks' | 'sounds' | 'stretch';
+import SharedHeader from './components/SharedHeader';
+import { Info } from 'lucide-react';
+
+export type View = 'dashboard' | 'focus' | 'breathe' | 'hydrate' | 'tasks' | 'sounds' | 'stretch' | 'studio';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
+
+  useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail) setCurrentView(e.detail);
+    };
+    window.addEventListener('navigate', handleNavigate);
+    return () => window.removeEventListener('navigate', handleNavigate);
+  }, []);
 
   const renderView = () => {
     switch (currentView) {
@@ -27,6 +38,7 @@ export default function App() {
       case 'tasks': return <TaskSoil onBack={() => setCurrentView('dashboard')} />;
       case 'sounds': return <SoundSanctuary onBack={() => setCurrentView('dashboard')} />;
       case 'stretch': return <StretchBreak onBack={() => setCurrentView('dashboard')} />;
+      case 'studio': return <CreatorStudio onBack={() => setCurrentView('dashboard')} />;
       default: return <Dashboard onNavigate={setCurrentView} />;
     }
   };

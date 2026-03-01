@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Leaf, Settings, LucideIcon } from 'lucide-react';
+import { ArrowLeft, Leaf, Settings, LucideIcon, Info } from 'lucide-react';
 
 interface SharedHeaderProps {
   title: string;
@@ -18,14 +18,19 @@ export default function SharedHeader({
   actions,
   showDashboardLink = true
 }: SharedHeaderProps) {
-  const [activeTab, setActiveTab] = useState<'current' | 'dashboard'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'dashboard' | 'studio'>('current');
   const [sliderStyle, setSliderStyle] = useState({ width: 0, transform: 'translateX(0px)' });
   const currentTabRef = useRef<HTMLButtonElement>(null);
   const dashboardTabRef = useRef<HTMLButtonElement>(null);
+  const studioTabRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const updateSlider = () => {
-    const activeRef = activeTab === 'current' ? currentTabRef : dashboardTabRef;
+    let activeRef;
+    if (activeTab === 'current') activeRef = currentTabRef;
+    else if (activeTab === 'dashboard') activeRef = dashboardTabRef;
+    else activeRef = studioTabRef;
+
     if (activeRef.current && containerRef.current) {
       const rect = activeRef.current.getBoundingClientRect();
       const containerRect = containerRef.current.getBoundingClientRect();
@@ -37,7 +42,6 @@ export default function SharedHeader({
   };
 
   useEffect(() => {
-    // Small delay to ensure layout is ready
     const timer = setTimeout(updateSlider, 50);
     window.addEventListener('resize', updateSlider);
     return () => {
@@ -48,7 +52,7 @@ export default function SharedHeader({
 
   const handleDashboardClick = () => {
     setActiveTab('dashboard');
-    setTimeout(onBack, 300); // Wait for animation to finish
+    setTimeout(onBack, 300);
   };
 
   return (
@@ -94,6 +98,22 @@ export default function SharedHeader({
               >
                 <Leaf size={14} className={activeTab === 'dashboard' ? 'text-primary' : 'text-slate-400'} />
                 <span>Dashboard</span>
+              </button>
+            )}
+
+            {/* Studio Tab (Only show on Dashboard to prevent clutter on other pages) */}
+            {!showDashboardLink && title === "Dashboard" && (
+              <button 
+                ref={studioTabRef}
+                onClick={() => {
+                  setActiveTab('studio');
+                  const event = new CustomEvent('navigate', { detail: 'studio' });
+                  window.dispatchEvent(event);
+                }}
+                className={`relative z-20 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-200 flex items-center gap-2 ${activeTab === 'studio' ? 'text-forest-deep' : 'text-forest-deep/50 hover:text-forest-deep/70'}`}
+              >
+                <Info size={14} className={activeTab === 'studio' ? 'text-primary' : 'text-slate-400'} />
+                <span>Studio</span>
               </button>
             )}
           </div>
