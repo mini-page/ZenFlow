@@ -18,11 +18,16 @@ export default function Dashboard({ onNavigate }: Props) {
   const { 
     isActive, timeLeft, isBreak, task, toggleTimer,
     tasks,
-    playing, sounds, setPlaying
+    playing, sounds, setPlaying,
+    water, hydrationGoal
   } = useAppContext();
 
-  const [userName, setUserName] = useState('Alex');
+  const [userName, setUserName] = useState(() => localStorage.getItem('zenflow_username') || 'Alex');
   const [isEditingName, setIsEditingName] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_username', userName);
+  }, [userName]);
   const [affirmations, setAffirmations] = useState<Affirmation[]>([]);
   const [currentAffirmationIndex, setCurrentAffirmationIndex] = useState(0);
   const [showAffirmationModal, setShowAffirmationModal] = useState(false);
@@ -266,9 +271,9 @@ export default function Dashboard({ onNavigate }: Props) {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Hydration</h4>
-                <p className="text-2xl font-black text-slate-900">1,200 <span className="text-sm font-normal text-slate-400">ml</span></p>
+                <p className="text-2xl font-black text-slate-900">{water.toLocaleString()} <span className="text-sm font-normal text-slate-400">ml</span></p>
               </div>
-              <p className="text-xs text-blue-600 font-medium mt-2">{hydrationText}</p>
+              <p className="text-xs text-blue-600 font-medium mt-2">Goal: {hydrationGoal.toLocaleString()} ml</p>
             </div>
 
             {/* Tall Bento: Priority Tasks */}

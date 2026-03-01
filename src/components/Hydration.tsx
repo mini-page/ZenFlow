@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Settings, Droplet, GlassWater, Edit2, X, Plus, RotateCcw } from 'lucide-react';
 import SharedHeader from './SharedHeader';
+import { useAppContext } from '../AppContext';
 
 export default function Hydration({ onBack }: { onBack: () => void }) {
-  const [water, setWater] = useState(1200);
-  const [goal, setGoal] = useState(2000);
+  const { water, setWater, hydrationGoal: goal, setHydrationGoal: setGoal } = useAppContext();
   const [showSettings, setShowSettings] = useState(false);
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const [overlayIcon, setOverlayIcon] = useState<'plus' | 'reset' | null>(null);

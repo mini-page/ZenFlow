@@ -76,20 +76,103 @@ interface AppContextType {
   setBreathingPatterns: (patterns: BreathingPattern[] | ((prev: BreathingPattern[]) => BreathingPattern[])) => void;
   breathingHistory: BreathingSession[];
   setBreathingHistory: (history: BreathingSession[] | ((prev: BreathingSession[]) => BreathingSession[])) => void;
+  // Hydration State
+  water: number;
+  setWater: (w: number | ((prev: number) => number)) => void;
+  hydrationGoal: number;
+  setHydrationGoal: (g: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  // Timer
-  const [focusDuration, setFocusDuration] = useState(25);
-  const [breakDuration, setBreakDuration] = useState(5);
-  const [isBreak, setIsBreak] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(focusDuration * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [task, setTask] = useState('Writing Quarterly Report');
+  // Hydration
+  const [water, setWater] = useState(() => {
+    const saved = localStorage.getItem('zenflow_water');
+    return saved ? parseInt(saved) : 1200;
+  });
+  const [hydrationGoal, setHydrationGoal] = useState(() => {
+    const saved = localStorage.getItem('zenflow_hydration_goal');
+    return saved ? parseInt(saved) : 2000;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_water', water.toString());
+  }, [water]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_hydration_goal', hydrationGoal.toString());
+  }, [hydrationGoal]);
+
+  // Timer settings persistence
+  const [focusDuration, setFocusDuration] = useState(() => {
+    const saved = localStorage.getItem('zenflow_focus_duration');
+    return saved ? parseInt(saved) : 25;
+  });
+  const [breakDuration, setBreakDuration] = useState(() => {
+    const saved = localStorage.getItem('zenflow_break_duration');
+    return saved ? parseInt(saved) : 5;
+  });
+  const [isBreak, setIsBreak] = useState(() => {
+    return localStorage.getItem('zenflow_is_break') === 'true';
+  });
+  const [task, setTask] = useState(() => {
+    return localStorage.getItem('zenflow_task') || 'Writing Quarterly Report';
+  });
+
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const isActive = localStorage.getItem('zenflow_timer_active') === 'true';
+    const expiry = localStorage.getItem('zenflow_timer_expiry');
+    
+    if (isActive && expiry) {
+      const remaining = Math.max(0, Math.floor((parseInt(expiry) - Date.now()) / 1000));
+      return remaining;
+    }
+    
+    // If not active, use saved durations
+    const savedIsBreak = localStorage.getItem('zenflow_is_break') === 'true';
+    const savedFocus = localStorage.getItem('zenflow_focus_duration');
+    const savedBreak = localStorage.getItem('zenflow_break_duration');
+    return (savedIsBreak ? (savedBreak ? parseInt(savedBreak) : 5) : (savedFocus ? parseInt(savedFocus) : 25)) * 60;
+  });
+
+  const [isActive, setIsActive] = useState(() => {
+    const active = localStorage.getItem('zenflow_timer_active') === 'true';
+    const expiry = localStorage.getItem('zenflow_timer_expiry');
+    if (active && expiry && parseInt(expiry) > Date.now()) {
+      return true;
+    }
+    return false;
+  });
 
   const [sessionCompleted, setSessionCompleted] = useState(false);
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('zenflow_focus_duration', focusDuration.toString());
+  }, [focusDuration]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_break_duration', breakDuration.toString());
+  }, [breakDuration]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_is_break', isBreak.toString());
+  }, [isBreak]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_task', task);
+  }, [task]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_timer_active', isActive.toString());
+    if (isActive) {
+      const expiry = Date.now() + timeLeft * 1000;
+      localStorage.setItem('zenflow_timer_expiry', expiry.toString());
+    } else {
+      localStorage.removeItem('zenflow_timer_expiry');
+    }
+  }, [isActive, timeLeft]);
 
   // Only update timeLeft when durations change and timer is not active
   useEffect(() => {
@@ -103,40 +186,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     let interval: any = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(t => Math.max(0, t - 1));
+        setTimeLeft(t => {
+          const newTime = Math.max(0, t - 1);
+          if (newTime === 0) {
+            setIsActive(false);
+            setSessionCompleted(true);
+            setIsBreak(!isBreak);
+            // TimeLeft will be updated by the !isActive effect above
+          }
+          return newTime;
+        });
       }, 1000);
-    } else if (timeLeft === 0 && isActive) {
-      setIsActive(false);
-      setSessionCompleted(true);
-      
-      // We don't auto-transition here anymore, we let FocusMode handle it
-      // so it can save the session and show the animation.
-      // But wait, if FocusMode is not mounted, it won't be handled.
-      // Let's just auto-transition here and let FocusMode watch sessionCompleted.
-      
-      if (!isBreak) {
-        // We could save it here, but we don't have fetchHistory.
-        // Let's just do the transition.
-      }
-      setIsBreak(!isBreak);
-      setTimeLeft((!isBreak ? breakDuration : focusDuration) * 60);
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft, isBreak, breakDuration, focusDuration]);
 
-  const toggleTimer = () => setIsActive(!isActive);
+  const toggleTimer = () => {
+    if (!isActive) {
+      // Starting: set expiry
+      const expiry = Date.now() + timeLeft * 1000;
+      localStorage.setItem('zenflow_timer_expiry', expiry.toString());
+    }
+    setIsActive(!isActive);
+  };
+  
   const resetTimer = () => {
     setIsActive(false);
-    setTimeLeft((isBreak ? breakDuration : focusDuration) * 60);
+    const newTime = (isBreak ? breakDuration : focusDuration) * 60;
+    setTimeLeft(newTime);
+    localStorage.removeItem('zenflow_timer_expiry');
   };
 
   // Tasks
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: '1', text: 'Draft Q3 Performance Report', completed: false, priority: 0 },
-    { id: '2', text: 'Review design mockups', completed: false, priority: 3 },
-    { id: '3', text: 'Morning hydration log', completed: true, priority: 1 },
-    { id: '4', text: 'Prepare meeting agenda', completed: false, priority: 2 },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem('zenflow_tasks');
+    return saved ? JSON.parse(saved) : [
+      { id: '1', text: 'Draft Q3 Performance Report', completed: false, priority: 0 },
+      { id: '2', text: 'Review design mockups', completed: false, priority: 3 },
+      { id: '3', text: 'Morning hydration log', completed: true, priority: 1 },
+      { id: '4', text: 'Prepare meeting agenda', completed: false, priority: 2 },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_tasks', JSON.stringify(tasks));
+  }, [tasks]);
 
   // Sounds
   const [sounds, setSounds] = useState<Sound[]>([
@@ -151,9 +245,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     { id: 'tibetan-bowls', name: 'Tibetan Bowls', category: 'Meditation', description: 'Resonant singing bowls', icon: 'self_improvement', defaultImage: 'https://images.unsplash.com/photo-1515023115689-589c33041d3c?auto=format&fit=crop&w=400&q=80' },
     { id: 'wind-chimes', name: 'Wind Chimes', category: 'Meditation', description: 'Gentle bamboo chimes', icon: 'air', defaultImage: 'https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&w=400&q=80' },
   ]);
-  const [playing, setPlaying] = useState<Record<string, boolean>>({});
-  const [volumes, setVolumes] = useState<Record<string, number>>({});
-  const [masterVolume, setMasterVolume] = useState(72);
+  const [playing, setPlaying] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('zenflow_playing');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [volumes, setVolumes] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('zenflow_volumes');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [masterVolume, setMasterVolume] = useState(() => {
+    const saved = localStorage.getItem('zenflow_master_volume');
+    return saved ? parseInt(saved) : 72;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_playing', JSON.stringify(playing));
+  }, [playing]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_volumes', JSON.stringify(volumes));
+  }, [volumes]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_master_volume', masterVolume.toString());
+  }, [masterVolume]);
 
   // Breathing
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([
@@ -182,7 +297,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       volumes, setVolumes,
       masterVolume, setMasterVolume,
       breathingPatterns, setBreathingPatterns,
-      breathingHistory, setBreathingHistory
+      breathingHistory, setBreathingHistory,
+      water, setWater,
+      hydrationGoal, setHydrationGoal
     }}>
       {children}
     </AppContext.Provider>
