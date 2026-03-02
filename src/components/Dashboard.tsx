@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, MoonStar, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3 } from 'lucide-react';
+import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, MoonStar, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, Sparkles } from 'lucide-react';
 import { AppView } from '../navigation';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
@@ -449,7 +449,7 @@ export default function Dashboard({ onNavigate }: Props) {
           </div>
 
           {/* Action Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 pb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 pb-10">
             <button onClick={() => onNavigate('focus')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
               <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary/15 text-primary-dark text-[9px] font-black uppercase tracking-[0.12em] border border-primary/25">F</span>
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/30 transition-colors">
@@ -475,7 +475,7 @@ export default function Dashboard({ onNavigate }: Props) {
             </button>
 
             <button onClick={() => onNavigate('hydrate')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
-              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black uppercase tracking-[0.12em] border border-blue-200">H</span>
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black uppercase tracking-[0.12em] border border-blue-200">W</span>
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
                 <Droplets className="text-blue-600 group-hover:-translate-y-0.5 transition-transform duration-300" size={20} />
               </div>
@@ -492,10 +492,22 @@ export default function Dashboard({ onNavigate }: Props) {
                 <ListTodo className="text-amber-700 group-hover:rotate-6 transition-transform duration-300" size={20} />
               </div>
               <div>
-                <h3 className="text-slate-900 font-bold text-base">Tasks</h3>
-                <p className="text-slate-500 text-xs mt-1">Manage garden tasks</p>
+                <h3 className="text-slate-900 font-bold text-base">Soil</h3>
+                <p className="text-slate-500 text-xs mt-1">Manage task seeds</p>
               </div>
               <div className="absolute inset-0 bg-amber-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+
+            <button onClick={() => onNavigate('habits')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-[0.12em] border border-emerald-200">H</span>
+              <div className="w-10 h-10 rounded-full bg-[#86efac]/30 flex items-center justify-center mb-3 group-hover:bg-[#86efac]/50 transition-colors">
+                <Sparkles className="text-emerald-700 group-hover:rotate-6 transition-transform duration-300" size={20} />
+              </div>
+              <div>
+                <h3 className="text-slate-900 font-bold text-base">Forest</h3>
+                <p className="text-slate-500 text-xs mt-1">Daily habit tracker</p>
+              </div>
+              <div className="absolute inset-0 bg-emerald-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
             <button onClick={() => onNavigate('sounds')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
@@ -505,21 +517,21 @@ export default function Dashboard({ onNavigate }: Props) {
               </div>
               <div>
                 <h3 className="text-slate-900 font-bold text-base">Sounds</h3>
-                <p className="text-slate-500 text-xs mt-1">Ambient soundscapes</p>
+                <p className="text-slate-500 text-xs mt-1">Ambient layers</p>
               </div>
               <div className="absolute inset-0 bg-purple-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
             <button onClick={() => onNavigate('stretch')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
-              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-[0.12em] border border-emerald-200">X</span>
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors">
-                <Activity className="text-emerald-700 group-hover:scale-110 transition-transform duration-300" size={20} />
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-[0.12em] border border-rose-200">X</span>
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
+                <Activity className="text-rose-700 group-hover:scale-110 transition-transform duration-300" size={20} />
               </div>
               <div>
                 <h3 className="text-slate-900 font-bold text-base">Stretch</h3>
                 <p className="text-slate-500 text-xs mt-1">Quick body refresh</p>
               </div>
-              <div className="absolute inset-0 bg-emerald-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-rose-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
             <button onClick={() => onNavigate('recovery')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
@@ -669,7 +681,7 @@ export default function Dashboard({ onNavigate }: Props) {
                   <Timer size={24} className="text-primary-dark" />
                 </div>
                 <span className="text-sm font-bold text-slate-700">Deep Work</span>
-                <span className="text-[10px] text-slate-400 mt-1">Start 25m focus</span>
+                <span className="text-[10px] text-slate-400 mt-1">Start focus</span>
               </button>
               
               <button onClick={() => { setShowQuickActions(false); onNavigate('breathe'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-accent-water transition-all group hover:-translate-y-1">
@@ -677,15 +689,15 @@ export default function Dashboard({ onNavigate }: Props) {
                   <Wind size={24} className="text-[#5e8ea6]" />
                 </div>
                 <span className="text-sm font-bold text-slate-700">Quick Calm</span>
-                <span className="text-[10px] text-slate-400 mt-1">1m breathing</span>
+                <span className="text-[10px] text-slate-400 mt-1">Breathing</span>
               </button>
               
-              <button onClick={() => { setShowQuickActions(false); onNavigate('hydrate'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-blue-400 transition-all group hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
-                  <Droplets size={24} className="text-blue-600" />
+              <button onClick={() => { setShowQuickActions(false); onNavigate('habits'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all group hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-full bg-[#86efac]/30 flex items-center justify-center mb-3 group-hover:bg-[#86efac]/50 transition-colors">
+                  <Sparkles size={24} className="text-emerald-700" />
                 </div>
-                <span className="text-sm font-bold text-slate-700">Log Water</span>
-                <span className="text-[10px] text-slate-400 mt-1">+200ml glass</span>
+                <span className="text-sm font-bold text-slate-700">Forest Floor</span>
+                <span className="text-[10px] text-slate-400 mt-1">Habit tracking</span>
               </button>
               
               <button onClick={() => { setShowQuickActions(false); onNavigate('tasks'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-amber-400 transition-all group hover:-translate-y-1">
@@ -696,28 +708,20 @@ export default function Dashboard({ onNavigate }: Props) {
                 <span className="text-[10px] text-slate-400 mt-1">Add to list</span>
               </button>
 
-              <button onClick={() => { setShowQuickActions(false); onNavigate('sounds'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-purple-400 transition-all group hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-3 group-hover:bg-purple-200 transition-colors">
-                  <Music size={24} className="text-purple-700" />
-                </div>
-                <span className="text-sm font-bold text-slate-700">Play Sounds</span>
-                <span className="text-[10px] text-slate-400 mt-1">Ambient focus</span>
-              </button>
-
-              <button onClick={() => { setShowQuickActions(false); onNavigate('stretch'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all group hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors">
-                  <Activity size={24} className="text-emerald-700" />
-                </div>
-                <span className="text-sm font-bold text-slate-700">Stretch</span>
-                <span className="text-[10px] text-slate-400 mt-1">Quick refresh</span>
-              </button>
-
               <button onClick={() => { setShowQuickActions(false); onNavigate('recovery'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group hover:-translate-y-1">
                 <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3 group-hover:bg-indigo-200 transition-colors">
                   <MoonStar size={24} className="text-indigo-700" />
                 </div>
                 <span className="text-sm font-bold text-slate-700">Recovery</span>
-                <span className="text-[10px] text-slate-400 mt-1">Sleep + mood log</span>
+                <span className="text-[10px] text-slate-400 mt-1">Sleep & mood</span>
+              </button>
+
+              <button onClick={() => { setShowQuickActions(false); onNavigate('stretch'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-rose-400 transition-all group hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
+                  <Activity size={24} className="text-rose-700" />
+                </div>
+                <span className="text-sm font-bold text-slate-700">Stretch</span>
+                <span className="text-[10px] text-slate-400 mt-1">Quick refresh</span>
               </button>
             </div>
           </div>

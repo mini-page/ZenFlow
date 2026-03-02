@@ -1,302 +1,330 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { MoonStar, Bed, HeartPulse, Smile, Save, RotateCcw, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { Bed, Smile, Zap, Save, RotateCcw, X, Moon, Sparkles, ChevronRight, Keyboard } from 'lucide-react';
 import SharedHeader from './SharedHeader';
+import GlassCard from './ui/GlassCard';
+import Button from './ui/Button';
 
-type MoodLevel = 'great' | 'good' | 'neutral' | 'low' | 'rough';
+type MoodLevel = 'rough' | 'anxious' | 'low' | 'neutral' | 'pensive' | 'good' | 'creative' | 'focused' | 'great' | 'inspired';
 
 interface RecoveryEntry {
   id: string;
   date: string;
   sleepHours: number;
-  sleepQuality: number;
   mood: MoodLevel;
   energy: number;
-  note: string;
+  completed_at: string;
 }
 
 const STORAGE_KEY = 'zenflow_recovery_history';
 
-const moods: Array<{ id: MoodLevel; label: string; emoji: string; tone: string }> = [
-  { id: 'great', label: 'Great', emoji: '😁', tone: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  { id: 'good', label: 'Good', emoji: '🙂', tone: 'bg-green-100 text-green-700 border-green-200' },
-  { id: 'neutral', label: 'Neutral', emoji: '😐', tone: 'bg-slate-100 text-slate-700 border-slate-200' },
-  { id: 'low', label: 'Low', emoji: '😕', tone: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { id: 'rough', label: 'Rough', emoji: '😣', tone: 'bg-rose-100 text-rose-700 border-rose-200' },
+const MOODS: Array<{ id: MoodLevel; label: string; emoji: string }> = [
+  { id: 'rough', label: 'Rough', emoji: '😫' },
+  { id: 'anxious', label: 'Anxious', emoji: '😰' },
+  { id: 'low', label: 'Low', emoji: '🙄' },
+  { id: 'neutral', label: 'Neutral', emoji: '😐' },
+  { id: 'pensive', label: 'Pensive', emoji: '🤔' },
+  { id: 'good', label: 'Good', emoji: '😊' },
+  { id: 'creative', label: 'Creative', emoji: '🎨' },
+  { id: 'focused', label: 'Focused', emoji: '🎯' },
+  { id: 'great', label: 'Great', emoji: '🤩' },
+  { id: 'inspired', label: 'Inspired', emoji: '✨' },
 ];
 
-const moodLabels: Record<MoodLevel, string> = {
-  great: 'Great',
-  good: 'Good',
-  neutral: 'Neutral',
-  low: 'Low',
-  rough: 'Rough',
-};
+const SLEEP_OPTIONS = Array.from({ length: 33 }, (_, i) => i * 0.5); // 0 to 16 hours
+const ENERGY_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1); // 1 to 10
 
 export default function RecoveryTracker({ onBack }: { onBack: () => void }) {
   const [history, setHistory] = useState<RecoveryEntry[]>([]);
   const [sleepHours, setSleepHours] = useState(7.5);
-  const [sleepQuality, setSleepQuality] = useState(7);
-  const [mood, setMood] = useState<MoodLevel>('neutral');
-  const [energy, setEnergy] = useState(6);
-  const [note, setNote] = useState('');
+  const [mood, setMood] = useState<MoodLevel>('great');
+  const [energy, setEnergy] = useState(5);
   const [savedPulse, setSavedPulse] = useState(false);
+  
+  const [focusedColumn, setFocusedColumn] = useState(1);
+
+  const sleepRef = useRef<HTMLDivElement>(null);
+  const moodRef = useRef<HTMLDivElement>(null);
+  const energyRef = useRef<HTMLDivElement>(null);
 
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as RecoveryEntry[];
-      if (Array.isArray(parsed)) setHistory(parsed);
-    } catch (error) {
-      console.error('Failed to parse recovery history:', error);
-    }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) setHistory(JSON.parse(raw));
   }, []);
 
+  // Sync scroll on mount
   useEffect(() => {
-    const todayEntry = history.find(entry => entry.date === today);
-    if (!todayEntry) return;
-    setSleepHours(todayEntry.sleepHours);
-    setSleepQuality(todayEntry.sleepQuality);
-    setMood(todayEntry.mood);
-    setEnergy(todayEntry.energy);
-    setNote(todayEntry.note);
-  }, [history, today]);
+    const timer = setTimeout(() => {
+      if (sleepRef.current) sleepRef.current.scrollTop = SLEEP_OPTIONS.indexOf(sleepHours) * 80;
+      if (moodRef.current) moodRef.current.scrollTop = MOODS.findIndex(m => m.id === mood) * 80;
+      if (energyRef.current) energyRef.current.scrollTop = ENERGY_OPTIONS.indexOf(energy) * 80;
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const recoveryScore = useMemo(() => {
-    const sleepDurationScore = Math.min((sleepHours / 8) * 10, 10);
-    const score = ((sleepQuality * 0.45) + (sleepDurationScore * 0.35) + (energy * 0.2)) * 10;
-    return Math.round(score);
-  }, [sleepHours, sleepQuality, energy]);
+    const sleepScore = (sleepHours / 10) * 40;
+    const moodMap: Record<MoodLevel, number> = { rough: 5, anxious: 8, low: 10, neutral: 20, pensive: 25, good: 30, creative: 35, focused: 38, great: 40, inspired: 40 };
+    const moodScore = moodMap[mood];
+    const energyScore = (energy / 10) * 20;
+    return Math.min(Math.round(sleepScore + moodScore + energyScore), 100);
+  }, [sleepHours, mood, energy]);
 
-  const pastWeek = useMemo(() => {
-    return history.slice(0, 7);
-  }, [history]);
+  const handleScroll = (ref: React.RefObject<HTMLDivElement>, type: 'sleep' | 'mood' | 'energy') => {
+    if (!ref.current) return;
+    const scrollY = ref.current.scrollTop;
+    const index = Math.round(scrollY / 80); // 80px is h-20
+    
+    if (type === 'sleep') {
+      const val = SLEEP_OPTIONS[index];
+      if (val !== undefined && val !== sleepHours) setSleepHours(val);
+    }
+    if (type === 'mood') {
+      const val = MOODS[index]?.id;
+      if (val !== undefined && val !== mood) setMood(val);
+    }
+    if (type === 'energy') {
+      const val = ENERGY_OPTIONS[index];
+      if (val !== undefined && val !== energy) setEnergy(val);
+    }
+  };
 
-  const averages = useMemo(() => {
-    if (pastWeek.length === 0) return { hours: 0, quality: 0, energy: 0 };
-    const totals = pastWeek.reduce(
-      (acc, entry) => {
-        acc.hours += entry.sleepHours;
-        acc.quality += entry.sleepQuality;
-        acc.energy += entry.energy;
-        return acc;
-      },
-      { hours: 0, quality: 0, energy: 0 }
-    );
-    return {
-      hours: +(totals.hours / pastWeek.length).toFixed(1),
-      quality: +(totals.quality / pastWeek.length).toFixed(1),
-      energy: +(totals.energy / pastWeek.length).toFixed(1),
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setFocusedColumn(prev => Math.max(0, prev - 1));
+      if (e.key === 'ArrowRight') setFocusedColumn(prev => Math.min(2, prev + 1));
+      
+      const scrollStep = 80;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const currentRef = [sleepRef, moodRef, energyRef][focusedColumn];
+        if (currentRef.current) {
+          const direction = e.key === 'ArrowUp' ? -1 : 1;
+          currentRef.current.scrollBy({ top: direction * scrollStep, behavior: 'smooth' });
+        }
+      }
     };
-  }, [pastWeek]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedColumn, sleepHours, mood, energy]);
 
   const saveEntry = () => {
     const entry: RecoveryEntry = {
-      id: `${today}-${Date.now()}`,
+      id: Date.now().toString(),
       date: today,
       sleepHours,
-      sleepQuality,
       mood,
       energy,
-      note: note.trim(),
+      completed_at: new Date().toISOString()
     };
-
-    const next = [entry, ...history.filter(item => item.date !== today)].slice(0, 45);
+    const next = [entry, ...history.filter(h => h.date !== today)].slice(0, 30);
     setHistory(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     setSavedPulse(true);
-    setTimeout(() => setSavedPulse(false), 900);
+    setTimeout(() => setSavedPulse(false), 1000);
   };
 
-  const resetToday = () => {
-    setSleepHours(7.5);
-    setSleepQuality(7);
-    setMood('neutral');
-    setEnergy(6);
-    setNote('');
-  };
+  const averages = useMemo(() => {
+    if (history.length === 0) return { sleep: 0, energy: 0 };
+    const sumSleep = history.reduce((acc, h) => acc + h.sleepHours, 0);
+    const sumEnergy = history.reduce((acc, h) => acc + h.energy, 0);
+    return {
+      sleep: (sumSleep / history.length).toFixed(1),
+      energy: (sumEnergy / history.length).toFixed(1)
+    };
+  }, [history]);
 
   return (
-    <div className="flex flex-col h-full w-full p-0 bg-background-light text-sage-900 transition-colors duration-1000 relative overflow-hidden">
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] right-[-10%] w-[420px] h-[420px] bg-indigo-300/20 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-15%] left-[-10%] w-[380px] h-[380px] bg-primary/10 rounded-full blur-[100px]" />
-      </div>
+    <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-1000 relative overflow-hidden mesh-gradient font-sans">
+      <SharedHeader title="Recovery Track" onBack={onBack} icon={Moon} iconColor="text-indigo-500" />
 
-      <SharedHeader
-        title="Recovery Track"
-        onBack={onBack}
-        currentView="recovery"
-        icon={MoonStar}
-      />
-
-      <main className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6 pb-28">
-          <section className="xl:col-span-2 space-y-6">
-            <div className="glass-panel rounded-[2rem] border border-white/60 p-6 md:p-8 shadow-soft">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Today, {new Date(today).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
-                  <h2 className="mt-1 text-3xl md:text-4xl font-serif font-bold text-slate-900">Sleep + Mood Recovery</h2>
-                </div>
-                <div className="px-4 py-3 rounded-2xl bg-indigo-50 border border-indigo-100 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-500">Recovery Score</p>
-                  <p className="text-3xl font-black text-indigo-700">{recoveryScore}</p>
-                </div>
+      <main className="flex-1 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 md:p-8 pb-32 overflow-hidden">
+        
+        {/* Left Column: Dial Interface */}
+        <div className="lg:col-span-8 flex flex-col gap-6 h-full">
+          <GlassCard className="flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+            <div>
+              <p className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-1">Today, {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
+              <h2 className="text-3xl font-serif font-bold text-slate-900 leading-tight">Status Selection</h2>
+              <div className="flex items-center gap-2 mt-1 text-slate-500 text-sm">
+                <Keyboard size={14} />
+                <span>Arrows <span className="font-bold">← → ↑ ↓</span> to navigate</span>
               </div>
             </div>
+            <div className="bg-slate-900 text-white rounded-2xl px-6 py-4 min-w-[140px] text-center shadow-lg">
+              <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1">Recovery Score</p>
+              <p className="text-4xl font-serif font-bold text-primary">{recoveryScore}</p>
+            </div>
+          </GlassCard>
 
-            <div className="glass-panel rounded-[2rem] border border-white/60 p-6 shadow-soft space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-bold text-slate-700 flex items-center gap-2"><Bed size={16} /> Sleep Time</label>
-                  <span className="text-sm font-black text-slate-800">{sleepHours.toFixed(1)} hrs</span>
+          <div className="relative flex-1 min-h-[400px] glass-panel rounded-[2.5rem] overflow-hidden border border-white/60 shadow-xl bg-white/40 backdrop-blur-2xl">
+            
+            {/* THE SELECTOR STRIP - HIGH CONTRAST */}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-20 bg-slate-900/90 z-0 shadow-2xl">
+               <div className="absolute inset-0 border-y-2 border-primary/30"></div>
+            </div>
+            
+            <div className="grid grid-cols-3 h-full relative z-10">
+              {/* Sleep Dial */}
+              <div 
+                onClick={() => setFocusedColumn(0)}
+                className={`flex flex-col h-full border-r border-slate-200/50 relative transition-all duration-300 ${focusedColumn === 0 ? 'bg-primary/5' : ''}`}
+              >
+                <div className="absolute top-4 inset-x-0 text-center z-20">
+                  <h3 className={`text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 ${focusedColumn === 0 ? 'text-primary-dark' : 'text-slate-400'}`}>
+                    <Bed size={12} /> Sleep
+                  </h3>
                 </div>
-                <input
-                  type="range"
-                  min="3"
-                  max="12"
-                  step="0.5"
-                  value={sleepHours}
-                  onChange={(e) => setSleepHours(parseFloat(e.target.value))}
-                  className="w-full accent-indigo-500"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-bold text-slate-700 flex items-center gap-2"><MoonStar size={16} /> Sleep Quality</label>
-                  <span className="text-sm font-black text-slate-800">{sleepQuality}/10</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={sleepQuality}
-                  onChange={(e) => setSleepQuality(parseInt(e.target.value))}
-                  className="w-full accent-primary"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-bold text-slate-700 flex items-center gap-2"><Smile size={16} /> Mood Today</label>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-black">shortcut: R</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  {moods.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => setMood(item.id)}
-                      className={`px-3 py-2 rounded-xl border text-sm font-bold transition-all ${
-                        mood === item.id ? item.tone : 'bg-white/70 border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="mr-1">{item.emoji}</span>
-                      {item.label}
-                    </button>
+                <div 
+                  ref={sleepRef}
+                  onScroll={() => handleScroll(sleepRef, 'sleep')}
+                  className="flex-1 overflow-y-auto hide-scrollbar snap-y-mandatory py-[calc(50%-40px)]"
+                >
+                  {SLEEP_OPTIONS.map(val => (
+                    <div key={val} className={`snap-center h-20 flex items-center justify-center transition-all duration-300 ${sleepHours === val ? 'text-3xl font-black text-primary drop-shadow-sm' : 'text-xl text-slate-400/40'}`}>
+                      {val}<span className="text-[10px] ml-1 font-bold uppercase">hrs</span>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-bold text-slate-700 flex items-center gap-2"><HeartPulse size={16} /> Energy</label>
-                  <span className="text-sm font-black text-slate-800">{energy}/10</span>
+              {/* Mood Dial */}
+              <div 
+                onClick={() => setFocusedColumn(1)}
+                className={`flex flex-col h-full border-r border-slate-200/50 relative transition-all duration-300 ${focusedColumn === 1 ? 'bg-primary/5' : ''}`}
+              >
+                <div className="absolute top-4 inset-x-0 text-center z-20">
+                  <h3 className={`text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 ${focusedColumn === 1 ? 'text-primary-dark' : 'text-slate-400'}`}>
+                    <Smile size={12} /> Mood
+                  </h3>
                 </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={energy}
-                  onChange={(e) => setEnergy(parseInt(e.target.value))}
-                  className="w-full accent-emerald-500"
-                />
+                <div 
+                  ref={moodRef}
+                  onScroll={() => handleScroll(moodRef, 'mood')}
+                  className="flex-1 overflow-y-auto hide-scrollbar snap-y-mandatory py-[calc(50%-40px)]"
+                >
+                  {MOODS.map(m => (
+                    <div key={m.id} className={`snap-center h-20 flex flex-col items-center justify-center transition-all duration-300 ${mood === m.id ? 'scale-125' : 'grayscale opacity-20'}`}>
+                      <span className="text-5xl drop-shadow-lg mb-1">{m.emoji}</span>
+                      {mood === m.id && <span className="text-[9px] font-black text-primary uppercase tracking-tighter absolute -bottom-1">{m.label}</span>}
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-bold text-slate-700 mb-2 block">Notes</label>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="How did your sleep affect today?"
-                  className="w-full min-h-24 rounded-xl border border-slate-200 bg-white/70 p-3 text-sm outline-none focus:border-primary"
-                />
+              {/* Energy Dial */}
+              <div 
+                onClick={() => setFocusedColumn(2)}
+                className={`flex flex-col h-full relative transition-all duration-300 ${focusedColumn === 2 ? 'bg-primary/5' : ''}`}
+              >
+                <div className="absolute top-4 inset-x-0 text-center z-20">
+                  <h3 className={`text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 ${focusedColumn === 2 ? 'text-primary-dark' : 'text-slate-400'}`}>
+                    <Zap size={12} /> Energy
+                  </h3>
+                </div>
+                <div 
+                  ref={energyRef}
+                  onScroll={() => handleScroll(energyRef, 'energy')}
+                  className="flex-1 overflow-y-auto hide-scrollbar snap-y-mandatory py-[calc(50%-40px)]"
+                >
+                  {ENERGY_OPTIONS.map(val => (
+                    <div key={val} className={`snap-center h-20 flex items-center justify-center transition-all duration-300 ${energy === val ? 'text-3xl font-black text-primary' : 'text-xl text-slate-400/40'}`}>
+                      Lvl {val}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </section>
 
-          <aside className="space-y-6">
-            <div className="glass-panel rounded-[2rem] border border-white/60 p-5 shadow-soft">
-              <h3 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500 mb-4">Weekly Snapshot</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center bg-white/70 border border-white/60 rounded-xl px-3 py-2">
-                  <span className="text-slate-500">Avg Sleep</span>
-                  <span className="font-black text-slate-900">{averages.hours || '-'} hrs</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/70 border border-white/60 rounded-xl px-3 py-2">
-                  <span className="text-slate-500">Avg Quality</span>
-                  <span className="font-black text-slate-900">{averages.quality || '-'} / 10</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/70 border border-white/60 rounded-xl px-3 py-2">
-                  <span className="text-slate-500">Avg Energy</span>
-                  <span className="font-black text-slate-900">{averages.energy || '-'} / 10</span>
-                </div>
+            {/* FADE GRADIENTS */}
+            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-white/90 to-transparent pointer-events-none z-20"></div>
+            <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-white/90 to-transparent pointer-events-none z-20"></div>
+          </div>
+        </div>
+
+        {/* Right Column: Stats */}
+        <div className="lg:col-span-4 flex flex-col gap-6 overflow-hidden h-full">
+          <GlassCard className="shrink-0">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+              <Sparkles size={14} className="text-primary" /> Weekly Stats
+            </h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-3 border-b border-slate-100">
+                <span className="text-sm font-medium text-slate-500">Average Sleep</span>
+                <span className="text-lg font-bold text-slate-900">{averages.sleep}h</span>
+              </div>
+              <div className="flex justify-between items-center py-3">
+                <span className="text-sm font-medium text-slate-500">Average Energy</span>
+                <span className="text-lg font-bold text-slate-900">Level {averages.energy}</span>
               </div>
             </div>
+          </GlassCard>
 
-            <div className="glass-panel rounded-[2rem] border border-white/60 p-5 shadow-soft">
-              <h3 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500 mb-4">Recent Entries</h3>
-              <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
-                {history.length === 0 && (
-                  <p className="text-sm text-slate-500 py-8 text-center">No recovery logs yet.</p>
-                )}
-                {history.map(entry => (
-                  <div key={entry.id} className="rounded-xl bg-white/70 border border-white/60 p-3">
-                    <p className="text-[11px] uppercase tracking-wider text-slate-400 font-black">{entry.date}</p>
-                    <p className="text-sm text-slate-700 mt-1">
-                      {entry.sleepHours.toFixed(1)}h sleep · {entry.sleepQuality}/10 quality · {entry.energy}/10 energy
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">Mood: {moodLabels[entry.mood]}</p>
+          <GlassCard className="flex-1 flex flex-col min-h-0">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Recent History</h3>
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+              {history.length === 0 ? (
+                <div className="text-center py-10 opacity-30 italic text-sm">No entries yet.</div>
+              ) : history.map(entry => (
+                <div key={entry.id} className="p-4 rounded-2xl bg-white/60 border border-white/80 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-black">{entry.date}</span>
+                    <span className="text-xl">{MOODS.find(m => m.id === entry.mood)?.emoji}</span>
                   </div>
-                ))}
-              </div>
+                  <p className="text-xs font-bold text-slate-800">{entry.sleepHours}h Sleep · Lvl {entry.energy} Energy</p>
+                </div>
+              ))}
             </div>
-          </aside>
+          </GlassCard>
         </div>
       </main>
 
-      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-        <div className="glass-panel px-6 py-3 rounded-full flex items-center gap-6 shadow-2xl border-white/40 backdrop-blur-xl">
-          <button onClick={resetToday} className="flex flex-col items-center gap-1 group">
-            <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-slate-200 transition-all">
-              <RotateCcw size={18} className="text-slate-600" />
-            </div>
-            <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Reset</span>
-          </button>
-
-          <button
-            onClick={saveEntry}
-            className={`size-14 rounded-full flex items-center justify-center shadow-lg transition-all ${
-              savedPulse
-                ? 'bg-emerald-500 text-white scale-105'
-                : 'bg-slate-900 text-white hover:scale-105 active:scale-95'
-            }`}
+      {/* Control Bar */}
+      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60]">
+        <div className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] rounded-full px-6 py-3 flex items-center gap-6">
+          <button 
+            onClick={() => {
+              setSleepHours(7.5); setMood('neutral'); setEnergy(5);
+              sleepRef.current?.scrollTo({top: 15 * 80, behavior: 'smooth'});
+              moodRef.current?.scrollTo({top: 3 * 80, behavior: 'smooth'});
+              energyRef.current?.scrollTo({top: 3 * 80, behavior: 'smooth'});
+            }}
+            className="size-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all"
           >
-            <Save size={24} />
+            <RotateCcw size={18} />
           </button>
 
-          <button onClick={onBack} className="flex flex-col items-center gap-1 group">
-            <div className="size-10 rounded-full bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 transition-all">
-              <X size={18} className="text-rose-500" />
-            </div>
-            <span className="text-[8px] font-bold uppercase tracking-widest text-rose-400">Back</span>
+          <Button 
+            size="lg" 
+            icon={Save} 
+            onClick={saveEntry}
+            className={`transition-all duration-500 min-w-[160px] ${savedPulse ? 'bg-emerald-500 text-white' : 'bg-primary text-slate-900'}`}
+          >
+            {savedPulse ? 'Saved to Garden' : 'Confirm Track'}
+          </Button>
+
+          <button 
+            onClick={onBack}
+            className="size-10 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-500 hover:bg-rose-500/30 transition-all"
+          >
+            <X size={18} />
           </button>
         </div>
       </nav>
+
+      <style>{`
+        .mesh-gradient {
+          background-color: #f6f8f6;
+          background-image: 
+            radial-gradient(at 0% 0%, hsla(120, 45%, 88%, 1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(140, 50%, 93%, 1) 0, transparent 50%);
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .snap-y-mandatory { scroll-snap-type: y mandatory; }
+        .snap-center { scroll-snap-align: center; }
+      `}</style>
     </div>
   );
 }
-
