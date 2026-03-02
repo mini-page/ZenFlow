@@ -3,6 +3,7 @@ export type AppView =
   | 'focus'
   | 'breathe'
   | 'hydrate'
+  | 'recovery'
   | 'tasks'
   | 'sounds'
   | 'stretch'
@@ -18,6 +19,7 @@ export interface NavItem {
     | 'timer'
     | 'wind'
     | 'droplet'
+    | 'moon-star'
     | 'list-todo'
     | 'music'
     | 'activity'
@@ -35,6 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { view: 'tasks', label: 'Tasks', group: 'Core', shortcut: 'T', icon: 'list-todo' },
   { view: 'breathe', label: 'Breathe', group: 'Wellness', shortcut: 'B', icon: 'wind' },
   { view: 'hydrate', label: 'Hydrate', group: 'Wellness', shortcut: 'H / W', icon: 'droplet' },
+  { view: 'recovery', label: 'Recovery', group: 'Wellness', shortcut: 'R', icon: 'moon-star' },
   { view: 'stretch', label: 'Stretch', group: 'Wellness', shortcut: 'X', icon: 'activity' },
   { view: 'sounds', label: 'Sounds', group: 'Tools', shortcut: 'S', icon: 'music' },
   { view: 'studio', label: 'Studio', group: 'Tools', shortcut: 'I', icon: 'cpu' },
