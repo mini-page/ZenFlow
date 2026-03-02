@@ -1,125 +1,104 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Leaf, Settings, LucideIcon, Info } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Leaf, Settings, LucideIcon, Timer, Wind, Droplet, ListTodo, Music, Activity, Cpu } from 'lucide-react';
+import { AppView, NAV_GROUPS, NAV_ITEMS } from '../navigation';
 
 interface SharedHeaderProps {
   title: string;
   onBack: () => void;
+  currentView: AppView;
   icon?: LucideIcon;
   iconColor?: string;
   actions?: React.ReactNode;
-  showDashboardLink?: boolean;
+  onNavigateView?: (view: AppView) => void;
 }
 
 export default function SharedHeader({ 
   title, 
   onBack, 
+  currentView,
   icon: Icon, 
   iconColor = "text-primary", 
   actions,
-  showDashboardLink = true
+  onNavigateView
 }: SharedHeaderProps) {
-  const [activeTab, setActiveTab] = useState<'current' | 'dashboard' | 'studio'>('current');
-  const [sliderStyle, setSliderStyle] = useState({ width: 0, transform: 'translateX(0px)' });
-  const currentTabRef = useRef<HTMLButtonElement>(null);
-  const dashboardTabRef = useRef<HTMLButtonElement>(null);
-  const studioTabRef = useRef<HTMLButtonElement>(null);
+  const initialGroup = NAV_ITEMS.find(i => i.view === currentView)?.group || 'Core';
+  const [activeGroup, setActiveGroup] = useState<'Core' | 'Wellness' | 'Tools'>(initialGroup);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Partial<Record<AppView, HTMLButtonElement | null>>>({});
+  const [sliderStyle, setSliderStyle] = useState({
+    width: 0,
+    transform: 'translateX(0px)',
+    opacity: 0,
+  });
 
-  const updateSlider = () => {
-    let activeRef;
-    if (activeTab === 'current') activeRef = currentTabRef;
-    else if (activeTab === 'dashboard') activeRef = dashboardTabRef;
-    else activeRef = studioTabRef;
-
-    if (activeRef.current && containerRef.current) {
-      const rect = activeRef.current.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-      setSliderStyle({
-        width: rect.width,
-        transform: `translateX(${rect.left - containerRect.left - 6}px)`
-      });
-    }
+  const iconMap: Record<string, LucideIcon> = {
+    leaf: Leaf,
+    timer: Timer,
+    wind: Wind,
+    droplet: Droplet,
+    'list-todo': ListTodo,
+    music: Music,
+    activity: Activity,
+    cpu: Cpu,
   };
 
-  useEffect(() => {
-    const timer = setTimeout(updateSlider, 50);
-    window.addEventListener('resize', updateSlider);
-    return () => {
-      window.removeEventListener('resize', updateSlider);
-      clearTimeout(timer);
-    };
-  }, [activeTab, showDashboardLink]);
+  const groupedItems = useMemo(
+    () => NAV_ITEMS.filter(item => item.group === activeGroup),
+    [activeGroup]
+  );
 
-  const handleDashboardClick = () => {
-    setActiveTab('dashboard');
-    setTimeout(onBack, 300);
+  useEffect(() => {
+    const currentGroup = NAV_ITEMS.find(i => i.view === currentView)?.group;
+    if (currentGroup) {
+      setActiveGroup(currentGroup);
+    }
+  }, [currentView]);
+
+  useEffect(() => {
+    const updateSlider = () => {
+      const activeButton = buttonRefs.current[currentView];
+      const container = containerRef.current;
+      if (!activeButton || !container) {
+        setSliderStyle(prev => ({ ...prev, opacity: 0 }));
+        return;
+      }
+
+      const activeRect = activeButton.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      setSliderStyle({
+        width: activeRect.width,
+        transform: `translateX(${activeRect.left - containerRect.left}px)`,
+        opacity: 1,
+      });
+    };
+
+    updateSlider();
+    window.addEventListener('resize', updateSlider);
+    return () => window.removeEventListener('resize', updateSlider);
+  }, [currentView]);
+
+  const handleNavigate = (view: AppView) => {
+    if (onNavigateView) {
+      onNavigateView(view);
+      return;
+    }
+    const event = new CustomEvent('navigate', { detail: view });
+    window.dispatchEvent(event);
   };
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-forest-deep/5 px-6 md:px-10 py-4 glass-panel sticky top-0 z-50 shrink-0">
-      <div className="flex items-center gap-4 text-forest-deep">
-        <button onClick={onBack} className="p-2 hover:bg-primary/20 rounded-lg transition-colors md:hidden">
-          <ArrowLeft size={20} />
-        </button>
-        <div className={`size-8 flex items-center justify-center bg-primary rounded-lg text-forest-deep`}>
-          <Leaf size={18} strokeWidth={3} className="fill-current" />
-        </div>
-        <h2 className="text-forest-deep text-xl font-serif font-bold leading-tight tracking-tight">Zen Flow</h2>
-      </div>
-      
-      <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
-        <nav className="hidden md:flex items-center">
-          <div ref={containerRef} className="tab-switcher relative flex items-center bg-white/40 p-[6px] rounded-full backdrop-blur-md border border-white/50 shadow-sm">
-            {/* Sliding Background */}
-            <div 
-              className="absolute top-[6px] left-[6px] h-[calc(100%-12px)] bg-white rounded-full shadow-md transition-all duration-300 ease-out z-10"
-              style={{
-                width: `${sliderStyle.width}px`,
-                transform: sliderStyle.transform
-              }}
-            />
-            
-            {/* Current Page Tab */}
-            <button 
-              ref={currentTabRef}
-              onClick={() => setActiveTab('current')}
-              className={`relative z-20 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-200 flex items-center gap-2 ${activeTab === 'current' ? 'text-forest-deep' : 'text-forest-deep/50 hover:text-forest-deep/70'}`}
-            >
-              {Icon && <Icon size={16} className={activeTab === 'current' ? iconColor : 'text-slate-400'} />}
-              <span>{title}</span>
-            </button>
-
-            {/* Dashboard Tab */}
-            {showDashboardLink && (
-              <button 
-                ref={dashboardTabRef}
-                onClick={handleDashboardClick}
-                className={`relative z-20 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-200 flex items-center gap-2 ${activeTab === 'dashboard' ? 'text-forest-deep' : 'text-forest-deep/50 hover:text-forest-deep/70'}`}
-              >
-                <Leaf size={14} className={activeTab === 'dashboard' ? 'text-primary' : 'text-slate-400'} />
-                <span>Dashboard</span>
-              </button>
-            )}
-
-            {/* Studio Tab (Only show on Dashboard to prevent clutter on other pages) */}
-            {!showDashboardLink && title === "Dashboard" && (
-              <button 
-                ref={studioTabRef}
-                onClick={() => {
-                  setActiveTab('studio');
-                  const event = new CustomEvent('navigate', { detail: 'studio' });
-                  window.dispatchEvent(event);
-                }}
-                className={`relative z-20 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-200 flex items-center gap-2 ${activeTab === 'studio' ? 'text-forest-deep' : 'text-forest-deep/50 hover:text-forest-deep/70'}`}
-              >
-                <Info size={14} className={activeTab === 'studio' ? 'text-primary' : 'text-slate-400'} />
-                <span>Studio</span>
-              </button>
-            )}
+    <header className="border-b border-solid border-forest-deep/5 px-4 md:px-8 py-3 glass-panel sticky top-0 z-50 shrink-0">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 text-forest-deep min-w-0">
+          <button onClick={onBack} className="p-2 hover:bg-primary/20 rounded-lg transition-colors md:hidden">
+            <ArrowLeft size={20} />
+          </button>
+          <div className={`size-8 flex items-center justify-center bg-primary rounded-lg text-forest-deep shrink-0`}>
+            <Leaf size={18} strokeWidth={3} className="fill-current" />
           </div>
-        </nav>
-        
-        <div className="flex gap-2">
+          <h2 className="text-forest-deep text-lg md:text-xl font-serif font-bold leading-tight tracking-tight truncate">Zen Flow</h2>
+        </div>
+        <div className="flex gap-2 shrink-0">
           {actions}
           {!actions && (
             <button className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-forest-deep hover:bg-primary/20 transition-all">
@@ -128,6 +107,55 @@ export default function SharedHeader({
           )}
         </div>
       </div>
+
+      <nav className="mt-3 overflow-x-auto scrollbar-hide">
+        <div className="mb-2 inline-flex items-center gap-1.5 bg-white/35 p-1 rounded-full border border-white/50">
+          {NAV_GROUPS.map(group => (
+            <button
+              key={group}
+              onClick={() => setActiveGroup(group)}
+              className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider transition-all ${
+                activeGroup === group
+                  ? 'bg-white text-forest-deep shadow-sm'
+                  : 'text-forest-deep/55 hover:text-forest-deep hover:bg-white/50'
+              }`}
+            >
+              {group}
+            </button>
+          ))}
+        </div>
+
+        <div
+          ref={containerRef}
+          className="relative inline-flex min-w-full md:min-w-0 items-center gap-2 bg-white/40 p-1 rounded-full backdrop-blur-md border border-white/50 shadow-sm"
+        >
+          <div
+            className="absolute top-1 bottom-1 bg-white rounded-full shadow-sm transition-all duration-300 ease-out"
+            style={sliderStyle}
+          />
+          {groupedItems.map(item => {
+            const isActive = item.view === currentView;
+            const IconComp = iconMap[item.icon];
+            return (
+              <button
+                key={item.view}
+                ref={(el) => { buttonRefs.current[item.view] = el; }}
+                onClick={() => handleNavigate(item.view)}
+                className={`relative z-10 h-10 rounded-full text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap flex items-center ${
+                  isActive
+                    ? 'px-4 gap-2 text-forest-deep'
+                    : 'w-10 justify-center text-forest-deep/70 hover:text-forest-deep hover:bg-white/50'
+                }`}
+                title={`Go to ${item.label}`}
+                aria-label={item.label}
+              >
+                <IconComp size={16} className={isActive ? 'text-primary' : 'text-forest-deep/70'} />
+                {isActive && <span>{item.label}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </header>
   );
 }

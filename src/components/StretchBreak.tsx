@@ -91,6 +91,7 @@ export default function StretchBreak({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Stretch Break" 
         onBack={onBack} 
+        currentView="stretch"
         icon={Activity} 
         iconColor="text-orange-500"
       />

@@ -129,6 +129,7 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Task Soil" 
         onBack={onBack} 
+        currentView="tasks"
         icon={Sprout} 
         iconColor="text-[#2D5A27]"
       />

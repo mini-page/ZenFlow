@@ -276,6 +276,7 @@ export default function BreathStudio({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title={showSettings ? "Settings" : "Breath Studio"} 
         onBack={showSettings ? () => { setShowSettings(false); setEditingPattern(null); } : onBack} 
+        currentView="breathe"
         icon={Wind} 
         actions={
           <button onClick={() => { setShowSettings(!showSettings); setEditingPattern(null); }} className={`size-10 flex items-center justify-center rounded-xl transition-all ${showSettings ? 'bg-primary text-forest-deep' : 'bg-white/50 hover:bg-primary/20'}`}>

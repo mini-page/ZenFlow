@@ -10,6 +10,7 @@ export default function CreatorStudio({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Studio" 
         onBack={onBack} 
+        currentView="studio"
         icon={Cpu} 
         iconColor="text-primary"
         actions={

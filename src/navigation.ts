@@ -1,0 +1,42 @@
+export type AppView =
+  | 'dashboard'
+  | 'focus'
+  | 'breathe'
+  | 'hydrate'
+  | 'tasks'
+  | 'sounds'
+  | 'stretch'
+  | 'studio';
+
+export interface NavItem {
+  view: AppView;
+  label: string;
+  group: 'Core' | 'Wellness' | 'Tools';
+  icon:
+    | 'leaf'
+    | 'timer'
+    | 'wind'
+    | 'droplet'
+    | 'list-todo'
+    | 'music'
+    | 'activity'
+    | 'cpu';
+}
+
+// Single source of truth for header page links.
+// To add a future page:
+// 1) Add it to AppView.
+// 2) Add an item here.
+// 3) Handle it in App.tsx renderView().
+export const NAV_ITEMS: NavItem[] = [
+  { view: 'dashboard', label: 'Dashboard', group: 'Core', icon: 'leaf' },
+  { view: 'focus', label: 'Focus', group: 'Core', icon: 'timer' },
+  { view: 'tasks', label: 'Tasks', group: 'Core', icon: 'list-todo' },
+  { view: 'breathe', label: 'Breathe', group: 'Wellness', icon: 'wind' },
+  { view: 'hydrate', label: 'Hydrate', group: 'Wellness', icon: 'droplet' },
+  { view: 'stretch', label: 'Stretch', group: 'Wellness', icon: 'activity' },
+  { view: 'sounds', label: 'Sounds', group: 'Tools', icon: 'music' },
+  { view: 'studio', label: 'Studio', group: 'Tools', icon: 'cpu' },
+];
+
+export const NAV_GROUPS: Array<'Core' | 'Wellness' | 'Tools'> = ['Core', 'Wellness', 'Tools'];

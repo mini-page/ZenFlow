@@ -141,6 +141,7 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
 
       <SharedHeader 
         title="Focus Mode" onBack={onBack} icon={Timer} iconColor={isBreak ? "text-blue-400" : "text-rose-500"}
+        currentView="focus"
         actions={
           <div className="flex gap-2">
             <button onClick={() => { setShowModal(true); setModalTab('history'); }} className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-sage-600 hover:bg-primary/20 transition-all shadow-sm" title="History">

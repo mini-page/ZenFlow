@@ -103,6 +103,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Sounds" 
         onBack={onBack} 
+        currentView="sounds"
         icon={Music} 
         actions={
           <div className="flex gap-2">

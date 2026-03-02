@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, RotateCcw } from 'lucide-react';
-import { View } from '../App';
+import { AppView } from '../navigation';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
 
@@ -18,7 +18,7 @@ interface FocusSession {
 }
 
 interface Props {
-  onNavigate: (view: View) => void;
+  onNavigate: (view: AppView) => void;
 }
 
 export default function Dashboard({ onNavigate }: Props) {
@@ -41,7 +41,7 @@ export default function Dashboard({ onNavigate }: Props) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [weather, setWeather] = useState<{ condition: string; temp: number }>({ condition: 'clear', temp: 72 });
-  const [streak, setStreak] = useState(0);
+  const [now, setNow] = useState(() => new Date());
 
   // 2. Effects
   useEffect(() => {
@@ -54,15 +54,6 @@ export default function Dashboard({ onNavigate }: Props) {
   }, []);
 
   useEffect(() => {
-    // Determine streak (consecutive sessions today)
-    if (!sessions || sessions.length === 0) {
-      setStreak(0);
-      return;
-    }
-    const today = new Date().toISOString().split('T')[0];
-    const todaysSessions = sessions.filter(s => s.completed_at && s.completed_at.startsWith(today)).length;
-    setStreak(todaysSessions);
-
     const fetchWeather = async () => {
       try {
         if ('geolocation' in navigator) {
@@ -84,7 +75,12 @@ export default function Dashboard({ onNavigate }: Props) {
       } catch (e) { console.error('Weather fetch failed', e); }
     };
     fetchWeather();
-  }, [sessions]);
+  }, []);
+
+  useEffect(() => {
+    const tick = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(tick);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -184,21 +180,34 @@ export default function Dashboard({ onNavigate }: Props) {
   };
 
   const completedTasksCount = (tasks || []).filter(t => t.completed).length;
-
-  const hour = new Date().getHours();
+  const todaysDateKey = now.toISOString().split('T')[0];
+  const todaysFocusSessions = sessions.filter(s => s.completed_at && s.completed_at.startsWith(todaysDateKey)).length;
+  const hour = now.getHours();
   let greeting = 'Good evening,';
   let weatherIcon = <Moon size={14} className="text-indigo-400" />;
-  let weatherText = '65°F Clear';
 
   if (hour >= 5 && hour < 12) {
     greeting = 'Good morning,';
     weatherIcon = <Sun size={14} className="text-amber-500" />;
-    weatherText = '68°F Sunny';
   } else if (hour >= 12 && hour < 18) {
     greeting = 'Good afternoon,';
     weatherIcon = <CloudSun size={14} className="text-orange-400" />;
-    weatherText = '75°F Partly Cloudy';
   }
+
+  const getWeekNumber = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
+
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const fullDate = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const timezoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, ' ');
+  const dayProgress = Math.round((((hour * 60) + now.getMinutes()) / 1440) * 100);
+  const weekNumber = getWeekNumber(now);
 
   // Calculate stats for chart
   const last7Days = Array.from({length: 7}, (_, i) => {
@@ -236,7 +245,7 @@ export default function Dashboard({ onNavigate }: Props) {
       <SharedHeader 
         title="Dashboard" 
         onBack={() => {}} 
-        showDashboardLink={false}
+        currentView="dashboard"
         actions={
           <div className="flex items-center gap-2">
             <button onClick={forceUpdate} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-rose-500 group" title="Refresh & Update App">
@@ -291,95 +300,48 @@ export default function Dashboard({ onNavigate }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col">
-          {/* Hero Section: The Living Garden */}
-          <div className="flex flex-col items-center justify-center relative mb-8 shrink-0 py-4">
-            <div className="relative w-full max-w-[500px] h-64 flex items-end justify-center animate-in fade-in zoom-in duration-1000">
-              <svg className="w-full h-full drop-shadow-2xl overflow-visible" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* The Ground / Terrain */}
-                <path d="M20 160 Q200 140 380 160 L380 190 Q200 200 20 190 Z" fill="#4ade80" opacity="0.2" />
-                <path d="M40 165 Q200 150 360 165 L360 185 Q200 195 40 185 Z" fill="#22c55e" opacity="0.3" />
+          {/* Hero Section: Live Time Dashboard */}
+          <div className="relative mb-8 shrink-0 animate-in fade-in zoom-in duration-700">
+            <div className="absolute -top-10 right-12 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="glass-panel relative rounded-[2.5rem] border border-white/60 shadow-sm p-6 md:p-8 overflow-hidden">
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-end">
+                <div className="lg:col-span-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 mb-3">Live Dashboard Clock</p>
+                  <h2 className="font-groovy text-slate-900 text-[clamp(2.6rem,10vw,6.5rem)] leading-[0.95] tracking-[0.04em] tabular-nums">
+                    {timeString}
+                  </h2>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-white/70 border border-white/60 text-xs font-black uppercase tracking-wider text-slate-700">
+                      {dayName}
+                    </span>
+                    <span className="text-sm md:text-base font-semibold text-slate-600">{fullDate}</span>
+                  </div>
+                </div>
 
-                {/* Rain Animation */}
-                {weather.condition === 'rain' && Array.from({ length: 20 }).map((_, i) => (
-                  <line key={`rain-${i}`} x1={20 + (i * 20)} y1="0" x2={15 + (i * 20)} y2="10" stroke="#0ea5e9" strokeWidth="1" opacity="0.4">
-                    <animate attributeName="y1" from="-20" to="200" dur={`${0.5 + Math.random()}s`} repeatCount="indefinite" />
-                    <animate attributeName="y2" from="-10" to="210" dur={`${0.5 + Math.random()}s`} repeatCount="indefinite" />
-                  </line>
-                ))}
-                
-                {/* Hydration Pond */}
-                <g transform="translate(280, 165)">
-                  <ellipse cx="0" cy="5" rx="60" ry="15" fill="#bae6fd" opacity="0.4" />
-                  <ellipse cx="0" cy="5" rx={Math.min(55, (water/hydrationGoal) * 55)} ry={Math.min(12, (water/hydrationGoal) * 12)} fill="#0ea5e9" opacity="0.6">
-                    <animate attributeName="ry" values="10;12;10" dur="3s" repeatCount="indefinite" />
-                  </ellipse>
-                </g>
-
-                {/* Completed Task Trees */}
-                {Array.from({ length: Math.min(completedTasksCount, 8) }).map((_, i) => {
-                  const x = 60 + (i * 35);
-                  const scale = 0.8 + (Math.random() * 0.4);
-                  return (
-                    <g key={`tree-${i}`} transform={`translate(${x}, 165) scale(${scale})`}>
-                      <path d="M0 0 L0 -30" stroke="#78350f" strokeWidth="3" strokeLinecap="round" />
-                      <circle cx="0" cy="-35" r="12" fill={weather.condition === 'rain' ? '#064e3b' : '#166534'} />
-                      <circle cx="-8" cy="-28" r="8" fill={weather.condition === 'rain' ? '#065f46' : '#15803d'} />
-                      <circle cx="8" cy="-28" r="8" fill={weather.condition === 'rain' ? '#065f46' : '#15803d'} />
-                    </g>
-                  );
-                })}
-
-                {/* Focus Streak Birds */}
-                {streak >= 3 && Array.from({ length: Math.min(streak - 2, 5) }).map((_, i) => (
-                  <g key={`bird-${i}`} transform={`translate(0, ${40 + (i * 20)})`}>
-                    <path d="M0 0 Q5 -5 10 0 Q15 -5 20 0" stroke="#475569" strokeWidth="1.5" fill="none">
-                      <animateTransform attributeName="transform" type="translate" from="-50 0" to="450 0" dur={`${8 + (i * 2)}s`} repeatCount="indefinite" />
-                      <animate attributeName="d" values="M0 0 Q5 -5 10 0 Q15 -5 20 0; M0 0 Q5 5 10 0 Q15 5 20 0; M0 0 Q5 -5 10 0 Q15 -5 20 0" dur="0.5s" repeatCount="indefinite" />
-                    </path>
-                  </g>
-                ))}
-
-                {/* Focus Session Blooms */}
-                {sessions.slice(-12).map((session, i) => {
-                  const x = 40 + (i * 25) + (Math.sin(i) * 10);
-                  const y = 175 + (Math.cos(i) * 5);
-                  return (
-                    <g key={`bloom-${session.id}`} transform={`translate(${x}, ${y}) scale(0.6)`}>
-                      <path d="M0 0 L0 -10" stroke="#16a34a" strokeWidth="1.5" />
-                      <circle cx="0" cy="-12" r="4" fill="#fb7185" />
-                      <circle cx="-3" cy="-15" r="3" fill="#fda4af" opacity="0.8" />
-                      <circle cx="3" cy="-15" r="3" fill="#fda4af" opacity="0.8" />
-                      <circle cx="0" cy="-18" r="3" fill="#fda4af" opacity="0.8" />
-                    </g>
-                  );
-                })}
-
-                {/* Central Focus Core */}
-                <g transform="translate(200, 120)">
-                  {isActive && (
-                    <>
-                      <circle cx="0" cy="0" r="40" fill="url(#focusGlow)" opacity="0.3">
-                        <animate attributeName="r" values="35;45;35" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                      <circle cx="0" cy="0" r="15" fill="#13ec13">
-                        <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                    </>
-                  )}
-                  {!isActive && <circle cx="0" cy="45" r="5" fill="#cbd5e1" />}
-                </g>
-
-                <defs>
-                  <radialGradient id="focusGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#13ec13" />
-                    <stop offset="100%" stopColor="#13ec13" stopOpacity="0" />
-                  </radialGradient>
-                </defs>
-              </svg>
+                <div className="glass-panel rounded-2xl border border-white/60 p-4 md:p-5">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded-xl bg-white/70 border border-white/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-slate-400">Week</p>
+                      <p className="mt-1 text-lg font-black text-slate-900">{weekNumber}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/70 border border-white/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-slate-400">Focus</p>
+                      <p className="mt-1 text-lg font-black text-slate-900">{todaysFocusSessions}</p>
+                    </div>
+                    <div className="col-span-2 rounded-xl bg-white/70 border border-white/60 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-black uppercase tracking-wider text-slate-400">Day Progress</p>
+                        <p className="font-black text-slate-700">{dayProgress}%</p>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-200/70 overflow-hidden">
+                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${dayProgress}%` }}></div>
+                      </div>
+                      <p className="mt-2 text-[11px] font-semibold text-slate-500 truncate">{timezoneLabel}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-center text-slate-500 text-xs mt-4 font-mono tracking-widest uppercase opacity-60">
-              {streak > 0 ? `Focus Streak: ${streak} | ` : ""}{completedTasksCount > 0 ? `Ecosystem Sustained by ${completedTasksCount} Completed Tasks` : "Your garden is waiting for its first seeds."}
-            </p>
           </div>
 
           {/* Bento Grid Layout */}

@@ -46,6 +46,7 @@ export default function Hydration({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Hydration" 
         onBack={onBack} 
+        currentView="hydrate"
         icon={Droplet} 
         iconColor="text-blue-500"
         actions={

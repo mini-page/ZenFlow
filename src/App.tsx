@@ -13,11 +13,12 @@ import SoundSanctuary from './components/SoundSanctuary';
 import StretchBreak from './components/StretchBreak';
 import CreatorStudio from './components/CreatorStudio';
 import { AppProvider, useAppContext } from './AppContext';
+import { AppView } from './navigation';
 
 import SharedHeader from './components/SharedHeader';
 import { Info, Timer, Play, Pause, Music, X } from 'lucide-react';
 
-export type View = 'dashboard' | 'focus' | 'breathe' | 'hydrate' | 'tasks' | 'sounds' | 'stretch' | 'studio';
+export type View = AppView;
 
 // Global keyboard shortcuts manager
 function KeyboardManager({ currentView, setCurrentView }: { currentView: View, setCurrentView: (v: View) => void }) {
