@@ -29,11 +29,14 @@ function KeyboardManager({ currentView, setCurrentView }: { currentView: View, s
       if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
       switch (e.key.toLowerCase()) {
         case ' ': e.preventDefault(); toggleTimer(); break;
+        case 'd': setCurrentView('dashboard'); break;
         case 'f': setCurrentView('focus'); break;
         case 'w': case 'h': setCurrentView('hydrate'); break;
         case 't': setCurrentView('tasks'); break;
         case 's': setCurrentView('sounds'); break;
         case 'b': setCurrentView('breathe'); break;
+        case 'x': setCurrentView('stretch'); break;
+        case 'i': setCurrentView('studio'); break;
         case 'escape': if (currentView !== 'dashboard') setCurrentView('dashboard'); break;
       }
     };

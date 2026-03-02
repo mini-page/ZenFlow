@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, RotateCcw } from 'lucide-react';
+import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3 } from 'lucide-react';
 import { AppView } from '../navigation';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
@@ -224,18 +224,6 @@ export default function Dashboard({ onNavigate }: Props) {
   });
   const maxMinutes = Math.max(...weeklyData.map(d => d.minutes), 60);
 
-  const forceUpdate = async () => {
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        await registration.unregister();
-      }
-    }
-    const cacheNames = await caches.keys();
-    await Promise.all(cacheNames.map(name => caches.delete(name)));
-    window.location.reload();
-  };
-
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-300 relative overflow-hidden">
       {/* Background Elements: Morning Sun & Clouds */}
@@ -248,9 +236,6 @@ export default function Dashboard({ onNavigate }: Props) {
         currentView="dashboard"
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={forceUpdate} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-rose-500 group" title="Refresh & Update App">
-              <RotateCcw size={20} className="group-hover:rotate-[-180deg] transition-transform duration-500" />
-            </button>
             <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group">
               <BarChart3 size={20} className="group-hover:scale-110 transition-transform" />
             </button>
@@ -265,40 +250,6 @@ export default function Dashboard({ onNavigate }: Props) {
       />
 
       <div className="relative z-10 flex-1 flex flex-col overflow-y-auto custom-scrollbar p-4 md:p-8">
-        {/* User Greeting Section */}
-        <div className="flex justify-between items-start mb-6 shrink-0 px-2">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-slate-500 text-sm font-medium">{greeting}</h2>
-              <div className="flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/40 shadow-sm">
-                {weather.condition === 'rain' ? <Droplets size={14} className="text-blue-400" /> : weatherIcon}
-                <span className="text-xs font-medium text-slate-600">{weather.temp}°F {weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}</span>
-              </div>
-            </div>
-            {isEditingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  onBlur={() => setIsEditingName(false)}
-                  onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-                  autoFocus
-                  className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-slate-900 w-full max-w-[200px]"
-                />
-                <button onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
-                  <Check size={20} />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingName(true)}>
-                <h1 className="text-slate-900 text-2xl font-bold tracking-tight">{userName}</h1>
-                <Edit2 size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col">
           {/* Hero Section: Live Time Dashboard */}
           <div className="relative mb-8 shrink-0 animate-in fade-in zoom-in duration-700">
@@ -306,7 +257,36 @@ export default function Dashboard({ onNavigate }: Props) {
             <div className="glass-panel relative rounded-[2.5rem] border border-white/60 shadow-sm p-6 md:p-8 overflow-hidden">
               <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-end">
                 <div className="lg:col-span-2">
-                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 mb-3">Live Dashboard Clock</p>
+                  <div className="mb-3">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h2 className="text-slate-500 text-sm font-medium">{greeting}</h2>
+                      <div className="flex items-center gap-1.5 bg-white/60 px-2 py-0.5 rounded-full border border-white/50 shadow-sm">
+                        {weather.condition === 'rain' ? <Droplets size={14} className="text-blue-400" /> : weatherIcon}
+                        <span className="text-xs font-medium text-slate-600">{weather.temp}°F {weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}</span>
+                      </div>
+                    </div>
+                    {isEditingName ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                          onBlur={() => setIsEditingName(false)}
+                          onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
+                          autoFocus
+                          className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-slate-900 w-full max-w-[220px]"
+                        />
+                        <button onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
+                          <Check size={20} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingName(true)}>
+                        <h1 className="text-slate-900 text-2xl font-bold tracking-tight">{userName}</h1>
+                        <Edit2 size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
+                  </div>
                   <h2 className="font-groovy text-slate-900 text-[clamp(2.6rem,10vw,6.5rem)] leading-[0.95] tracking-[0.04em] tabular-nums">
                     {timeString}
                   </h2>
