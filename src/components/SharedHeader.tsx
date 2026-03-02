@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Leaf, Settings, LucideIcon, Info } from 'lucide-react';
+import IconButton from './IconButton';
 
 interface SharedHeaderProps {
   title: string;
@@ -58,9 +59,12 @@ export default function SharedHeader({
   return (
     <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-forest-deep/5 px-6 md:px-10 py-4 glass-panel sticky top-0 z-50 shrink-0">
       <div className="flex items-center gap-4 text-forest-deep">
-        <button onClick={onBack} className="p-2 hover:bg-primary/20 rounded-lg transition-colors md:hidden">
-          <ArrowLeft size={20} />
-        </button>
+        <IconButton
+          icon={ArrowLeft}
+          onClick={onBack}
+          aria-label="Go back"
+          className="p-2 hover:bg-primary/20 rounded-lg transition-colors md:hidden"
+        />
         <div className={`size-8 flex items-center justify-center bg-primary rounded-lg text-forest-deep`}>
           <Leaf size={18} strokeWidth={3} className="fill-current" />
         </div>
@@ -122,9 +126,11 @@ export default function SharedHeader({
         <div className="flex gap-2">
           {actions}
           {!actions && (
-            <button className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-forest-deep hover:bg-primary/20 transition-all">
-              <Settings size={20} />
-            </button>
+            <IconButton
+              icon={Settings}
+              aria-label="Open settings"
+              className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-forest-deep hover:bg-primary/20 transition-all"
+            />
           )}
         </div>
       </div>
