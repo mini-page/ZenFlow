@@ -45,6 +45,17 @@ export default function StretchBreak({ onBack }: { onBack: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(STRETCHES[0].duration);
   const [isActive, setIsActive] = useState(true);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (isActive) {
+      interval = setInterval(() => {
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  }, [isActive]);
 
   const currentStretch = STRETCHES[currentIndex];
   
@@ -176,7 +187,7 @@ export default function StretchBreak({ onBack }: { onBack: () => void }) {
                     <Clock size={12} className="text-slate-400" />
                     <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Total Time</span>
                   </div>
-                  <span className="font-bold text-lg">02:30</span>
+                  <span className="font-bold text-lg">{formatTime(elapsedTime)}</span>
                 </div>
               </div>
             </div>

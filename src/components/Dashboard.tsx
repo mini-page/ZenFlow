@@ -3,18 +3,13 @@ import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activit
 import { AppView } from '../navigation';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
+import { formatTime } from '../utils/format';
+import { FocusSession } from '../utils/types';
 
 interface Affirmation {
   id: number;
   text: string;
   is_custom: number;
-}
-
-interface FocusSession {
-  id: number;
-  duration: number;
-  task_name: string;
-  completed_at: string;
 }
 
 interface Props {
@@ -30,7 +25,7 @@ export default function Dashboard({ onNavigate }: Props) {
   } = useAppContext();
 
   // 1. Initialize ALL states at the top
-  const [userName, setUserName] = useState(() => localStorage.getItem('zenflow_username') || 'Alex');
+  const [userName, setUserName] = useState(() => localStorage.getItem('zenflow_username') || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [affirmations, setAffirmations] = useState<Affirmation[]>([]);
   const [currentAffirmationIndex, setCurrentAffirmationIndex] = useState(0);
@@ -104,16 +99,27 @@ export default function Dashboard({ onNavigate }: Props) {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  const DEFAULT_AFFIRMATIONS: Affirmation[] = [
+    { id: 1, text: 'I am capable of achieving my goals.', is_custom: 0 },
+    { id: 2, text: 'Every breath I take fills me with peace.', is_custom: 0 },
+    { id: 3, text: 'I focus on what I can control and let go of the rest.', is_custom: 0 },
+    { id: 4, text: 'My productivity is a reflection of my focus, not my speed.', is_custom: 0 },
+    { id: 5, text: 'I am worthy of rest and rejuvenation.', is_custom: 0 },
+    { id: 6, text: 'Today is a new opportunity to grow my garden.', is_custom: 0 },
+  ];
+
   const fetchAffirmations = async () => {
     try {
       const res = await fetch('/api/affirmations');
+      if (!res.ok) throw new Error('API unavailable');
       const data = await res.json();
       setAffirmations(data);
+      localStorage.setItem('zenflow_affirmations_cache', JSON.stringify(data));
       if (data.length > 0) {
         const today = new Date().toDateString();
         const savedDate = localStorage.getItem('affirmationDate');
         const savedIndex = localStorage.getItem('affirmationIndex');
-        
+
         if (savedDate === today && savedIndex !== null) {
           setCurrentAffirmationIndex(parseInt(savedIndex));
         } else {
@@ -124,53 +130,73 @@ export default function Dashboard({ onNavigate }: Props) {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch affirmations:', error);
+      // Fallback: use cached or default affirmations
+      const cached = localStorage.getItem('zenflow_affirmations_cache');
+      const fallback = cached ? JSON.parse(cached) : DEFAULT_AFFIRMATIONS;
+      setAffirmations(fallback);
+      if (fallback.length > 0) {
+        const today = new Date().toDateString();
+        const savedDate = localStorage.getItem('affirmationDate');
+        const savedIndex = localStorage.getItem('affirmationIndex');
+        if (savedDate === today && savedIndex !== null) {
+          setCurrentAffirmationIndex(parseInt(savedIndex));
+        } else {
+          const randomIndex = Math.floor(Math.random() * fallback.length);
+          setCurrentAffirmationIndex(randomIndex);
+          localStorage.setItem('affirmationDate', today);
+          localStorage.setItem('affirmationIndex', randomIndex.toString());
+        }
+      }
     }
   };
 
   const fetchSessions = async () => {
     try {
       const res = await fetch('/api/sessions');
+      if (!res.ok) throw new Error('API unavailable');
       const data = await res.json();
       setSessions(data);
+      localStorage.setItem('zenflow_sessions_cache', JSON.stringify(data));
     } catch (e) {
-      console.error('Failed to fetch sessions:', e);
+      // Fallback to cached sessions
+      const cached = localStorage.getItem('zenflow_sessions_cache');
+      if (cached) setSessions(JSON.parse(cached));
     }
   };
 
   const addAffirmation = async () => {
     if (!newAffirmation.trim()) return;
+    const newItem: Affirmation = { id: Date.now(), text: newAffirmation.trim(), is_custom: 1 };
+    // Optimistic local update
+    const updated = [...affirmations, newItem];
+    setAffirmations(updated);
+    localStorage.setItem('zenflow_affirmations_cache', JSON.stringify(updated));
+    setNewAffirmation('');
     try {
       const res = await fetch('/api/affirmations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: newAffirmation, is_custom: 1 })
       });
-      if (res.ok) {
-        setNewAffirmation('');
-        fetchAffirmations();
-      }
+      if (res.ok) fetchAffirmations();
     } catch (error) {
-      console.error('Failed to add affirmation:', error);
+      // Already saved locally, will sync when backend is available
     }
   };
 
   const deleteAffirmation = async (id: number) => {
+    // Optimistic local update
+    const updated = affirmations.filter(a => a.id !== id);
+    setAffirmations(updated);
+    localStorage.setItem('zenflow_affirmations_cache', JSON.stringify(updated));
     try {
       await fetch(`/api/affirmations/${id}`, { method: 'DELETE' });
-      fetchAffirmations();
     } catch (error) {
-      console.error('Failed to delete affirmation:', error);
+      // Already removed locally
     }
   };
 
   const currentAffirmation = affirmations && affirmations.length > 0 ? affirmations[currentAffirmationIndex] : null;
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   const priorityTasks = tasks ? tasks.filter(t => !t.completed && t.priority > 0).sort((a, b) => b.priority - a.priority).slice(0, 2) : [];
   const activeSounds = sounds ? sounds.filter(s => playing[s.id]) : [];
@@ -279,7 +305,7 @@ export default function Dashboard({ onNavigate }: Props) {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingName(true)}>
-                        <h1 className="text-slate-900 text-2xl font-bold tracking-tight">{userName}</h1>
+                        <h1 className="text-slate-900 text-2xl font-bold tracking-tight">{userName || 'Your Name'}</h1>
                         <Edit2 size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     )}

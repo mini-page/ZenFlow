@@ -11,7 +11,10 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
   const [overlayIcon, setOverlayIcon] = useState<'bloom' | 'add' | null>(null);
   
   // Sidebar State
-  const [dailyNote, setDailyNote] = useState('');
+  const today = new Date().toISOString().split('T')[0];
+  const [dailyNote, setDailyNote] = useState(() => {
+    return localStorage.getItem(`zenflow_note_${new Date().toISOString().split('T')[0]}`) || '';
+  });
   const [isNoteSaved, setIsNoteSaved] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
@@ -113,6 +116,7 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
   });
 
   const saveNote = () => {
+    localStorage.setItem(`zenflow_note_${today}`, dailyNote);
     setIsNoteSaved(true);
     setTimeout(() => setIsNoteSaved(false), 2000);
   };

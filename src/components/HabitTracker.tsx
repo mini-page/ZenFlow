@@ -21,11 +21,7 @@ const CATEGORIES = ['All', 'Wellness', 'Growth', 'Mind', 'General'];
 export default function HabitTracker({ onBack }: { onBack: () => void }) {
   const [habits, setHabits] = useState<Habit[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Morning Meditation', description: '15 mins of mindfulness', icon: 'self_improvement', streak: 5, completedDates: [], category: 'Mind' },
-      { id: '2', name: 'Read 20 Pages', description: 'Expand your knowledge', icon: 'menu_book', streak: 15, completedDates: [], category: 'Growth' },
-      { id: '3', name: 'Hydration', description: 'Drink 2L of water', icon: 'water_drop', streak: 2, completedDates: [], category: 'Wellness' }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -40,18 +36,43 @@ export default function HabitTracker({ onBack }: { onBack: () => void }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
   }, [habits]);
 
+  const calculateStreak = (completedDates: string[]): number => {
+    if (completedDates.length === 0) return 0;
+    const sorted = [...completedDates].sort().reverse();
+    // Streak counts consecutive days ending at today or yesterday
+    const todayDate = new Date(today);
+    const yesterdayDate = new Date(todayDate);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+    if (!sorted.includes(today) && !sorted.includes(yesterday)) return 0;
+
+    let streak = 0;
+    let checkDate = sorted.includes(today) ? new Date(today) : new Date(yesterday);
+    while (true) {
+      const key = checkDate.toISOString().split('T')[0];
+      if (sorted.includes(key)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
   const toggleHabit = (id: string) => {
     setHabits(prev => prev.map(h => {
       if (h.id !== id) return h;
       const isCompletedToday = h.completedDates.includes(today);
-      const newDates = isCompletedToday 
+      const newDates = isCompletedToday
         ? h.completedDates.filter(d => d !== today)
         : [...h.completedDates, today];
-      
-      return { 
-        ...h, 
+
+      return {
+        ...h,
         completedDates: newDates,
-        streak: isCompletedToday ? Math.max(0, h.streak - 1) : h.streak + 1
+        streak: calculateStreak(newDates)
       };
     }));
   };

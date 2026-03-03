@@ -151,19 +151,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setSounds([...builtInSounds, ...customSounds]);
   }, [customSounds]);
 
-  // Hydration
+  // Hydration (date-scoped so it resets daily)
+  const getTodayKey = () => new Date().toISOString().split('T')[0];
+  const [waterDateKey, setWaterDateKey] = useState(getTodayKey);
   const [water, setWater] = useState(() => {
-    const saved = localStorage.getItem('zenflow_water');
-    return saved ? parseInt(saved) : 1200;
+    const today = getTodayKey();
+    const saved = localStorage.getItem(`zenflow_water_${today}`);
+    return saved ? parseInt(saved) : 0;
   });
   const [hydrationGoal, setHydrationGoal] = useState(() => {
     const saved = localStorage.getItem('zenflow_hydration_goal');
     return saved ? parseInt(saved) : 2000;
   });
 
+  // Check for day change every minute and reset water if needed
   useEffect(() => {
-    localStorage.setItem('zenflow_water', water.toString());
-  }, [water]);
+    const checkDayChange = () => {
+      const today = getTodayKey();
+      if (today !== waterDateKey) {
+        setWaterDateKey(today);
+        setWater(0);
+      }
+    };
+    const interval = setInterval(checkDayChange, 60000);
+    return () => clearInterval(interval);
+  }, [waterDateKey]);
+
+  useEffect(() => {
+    localStorage.setItem(`zenflow_water_${waterDateKey}`, water.toString());
+  }, [water, waterDateKey]);
 
   useEffect(() => {
     localStorage.setItem('zenflow_hydration_goal', hydrationGoal.toString());
@@ -182,7 +198,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return localStorage.getItem('zenflow_is_break') === 'true';
   });
   const [task, setTask] = useState(() => {
-    return localStorage.getItem('zenflow_task') || 'Writing Quarterly Report';
+    return localStorage.getItem('zenflow_task') || '';
   });
 
   const [timeLeft, setTimeLeft] = useState(() => {
@@ -285,12 +301,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Tasks
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('zenflow_tasks');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', text: 'Draft Q3 Performance Report', completed: false, priority: 0 },
-      { id: '2', text: 'Review design mockups', completed: false, priority: 3 },
-      { id: '3', text: 'Morning hydration log', completed: true, priority: 1 },
-      { id: '4', text: 'Prepare meeting agenda', completed: false, priority: 2 },
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
@@ -324,15 +335,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [masterVolume]);
 
   // Breathing
-  const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([
-    { id: '4-7-8', name: '4-7-8 Relax', description: 'Promotes deep relaxation and sleep', inhale: 4, hold1: 7, exhale: 8, hold2: 0, icon: 'Moon', theme: 'relaxing' },
-    { id: 'box', name: 'Box Breathing', description: 'Balances energy and calms the mind', inhale: 4, hold1: 4, exhale: 4, hold2: 4, icon: 'Square', theme: 'neutral' },
-    { id: 'awake', name: 'Awake', description: 'Invigorates and energizes', inhale: 6, hold1: 0, exhale: 2, hold2: 0, icon: 'Sun', theme: 'energizing' },
-    { id: 'deep-calm', name: 'Deep Calm', description: 'Reduces anxiety and stress', inhale: 4, hold1: 2, exhale: 6, hold2: 0, icon: 'Droplets', theme: 'relaxing' },
-    { id: 'coherent', name: 'Coherent', description: 'Harmonizes heart and brain', inhale: 5.5, hold1: 0, exhale: 5.5, hold2: 0, icon: 'Heart', theme: 'neutral' },
-    { id: 'pranayama', name: 'Pranayama', description: 'Traditional yogic breathing', inhale: 4, hold1: 16, exhale: 8, hold2: 0, icon: 'Flower2', theme: 'relaxing' }
-  ]);
-  const [breathingHistory, setBreathingHistory] = useState<BreathingSession[]>([]);
+  const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(() => {
+    const saved = localStorage.getItem('zenflow_breathing_patterns');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: '4-7-8', name: '4-7-8 Relax', description: 'Promotes deep relaxation and sleep', inhale: 4, hold1: 7, exhale: 8, hold2: 0, icon: 'Moon', theme: 'relaxing' },
+      { id: 'box', name: 'Box Breathing', description: 'Balances energy and calms the mind', inhale: 4, hold1: 4, exhale: 4, hold2: 4, icon: 'Square', theme: 'neutral' },
+      { id: 'awake', name: 'Awake', description: 'Invigorates and energizes', inhale: 6, hold1: 0, exhale: 2, hold2: 0, icon: 'Sun', theme: 'energizing' },
+      { id: 'deep-calm', name: 'Deep Calm', description: 'Reduces anxiety and stress', inhale: 4, hold1: 2, exhale: 6, hold2: 0, icon: 'Droplets', theme: 'relaxing' },
+      { id: 'coherent', name: 'Coherent', description: 'Harmonizes heart and brain', inhale: 5.5, hold1: 0, exhale: 5.5, hold2: 0, icon: 'Heart', theme: 'neutral' },
+      { id: 'pranayama', name: 'Pranayama', description: 'Traditional yogic breathing', inhale: 4, hold1: 16, exhale: 8, hold2: 0, icon: 'Flower2', theme: 'relaxing' }
+    ];
+  });
+  const [breathingHistory, setBreathingHistory] = useState<BreathingSession[]>(() => {
+    const saved = localStorage.getItem('zenflow_breathing_history');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_breathing_patterns', JSON.stringify(breathingPatterns));
+  }, [breathingPatterns]);
+
+  useEffect(() => {
+    localStorage.setItem('zenflow_breathing_history', JSON.stringify(breathingHistory));
+  }, [breathingHistory]);
 
   return (
     <AppContext.Provider value={{

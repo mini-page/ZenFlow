@@ -16,6 +16,7 @@ import StretchBreak from './components/StretchBreak';
 import CreatorStudio from './components/CreatorStudio';
 import { AppProvider, useAppContext } from './AppContext';
 import { AppView } from './navigation';
+import { formatTime } from './utils/format';
 
 import SharedHeader from './components/SharedHeader';
 import { Info, Timer, Play, Pause, Music, X } from 'lucide-react';
@@ -76,14 +77,28 @@ function FlowPill({ currentView, setCurrentView }: { currentView: View, setCurre
       setPosition(newPos);
       localStorage.setItem('zenflow_pill_pos', JSON.stringify(newPos));
     };
-    const handleMouseUp = () => setIsDragging(false);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const newX = Math.max(20, Math.min(window.innerWidth - 220, touch.clientX - dragOffset.x));
+      const newY = Math.max(20, Math.min(window.innerHeight - 80, touch.clientY - dragOffset.y));
+      const newPos = { x: newX, y: newY };
+      setPosition(newPos);
+      localStorage.setItem('zenflow_pill_pos', JSON.stringify(newPos));
+    };
+    const handleEnd = () => setIsDragging(false);
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('mouseup', handleEnd);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleEnd);
     }
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleEnd);
     };
   }, [isDragging, dragOffset]);
 
@@ -93,6 +108,15 @@ function FlowPill({ currentView, setCurrentView }: { currentView: View, setCurre
     if (pillRef.current) {
       const rect = pillRef.current.getBoundingClientRect();
       setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      setIsDragging(true);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (pillRef.current) {
+      const rect = pillRef.current.getBoundingClientRect();
+      const touch = e.touches[0];
+      setDragOffset({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
       setIsDragging(true);
     }
   };
@@ -108,15 +132,16 @@ function FlowPill({ currentView, setCurrentView }: { currentView: View, setCurre
   };
 
   return (
-    <div 
+    <div
       ref={pillRef}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       className={`fixed z-[100] select-none ${isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab'} transition-transform duration-200`}
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
     >
       <div className="bg-white/90 backdrop-blur-xl border border-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-full px-4 py-2 flex items-center gap-4 text-slate-900">
         {isActive && (
-          <div className="flex items-center gap-3 pr-4 border-r border-slate-200 pointer-events-auto" onMouseDown={e => e.stopPropagation()}>
+          <div className="flex items-center gap-3 pr-4 border-r border-slate-200 pointer-events-auto" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
             <button 
               onClick={() => setCurrentView('focus')}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${isBreak ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-primary/10 text-primary-dark hover:bg-primary/20'}`}
@@ -131,7 +156,7 @@ function FlowPill({ currentView, setCurrentView }: { currentView: View, setCurre
         )}
 
         {hasActiveSounds && (
-          <div className="flex items-center gap-3 pointer-events-auto" onMouseDown={e => e.stopPropagation()}>
+          <div className="flex items-center gap-3 pointer-events-auto" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
             <button 
               onClick={() => setCurrentView('sounds')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
