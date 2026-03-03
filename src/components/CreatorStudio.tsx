@@ -1,9 +1,42 @@
-import React from 'react';
-import { Leaf, Info, User, Layers, Library, Keyboard, Box, Tablet, Headphones, Coffee, FileText, Share2, ArrowUpRight, Terminal, Twitter, Github, Play, Code, Cpu } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Leaf, Info, User, Layers, Library, Keyboard, Box, Tablet, Headphones, Coffee, FileText, Share2, ArrowUpRight, Terminal, Twitter, Github, Play, Code, Cpu, Download } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import SharedHeader from './SharedHeader';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 export default function CreatorStudio({ onBack }: { onBack: () => void }) {
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredInstallPrompt) return;
+    await deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    setDeferredInstallPrompt(null);
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-slate-900 transition-colors duration-300 relative overflow-hidden font-sans selection:bg-primary selection:text-black">
       
@@ -14,9 +47,27 @@ export default function CreatorStudio({ onBack }: { onBack: () => void }) {
         icon={Cpu} 
         iconColor="text-primary"
         actions={
-          <button className="hidden sm:flex items-center justify-center h-10 px-6 rounded-full bg-primary hover:bg-primary/90 text-background-dark text-sm font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(19,236,19,0.3)]">
-            Get Extension
-          </button>
+          deferredInstallPrompt ? (
+            <>
+              <button
+                onClick={handleInstallClick}
+                className="sm:hidden flex size-10 items-center justify-center rounded-full bg-primary hover:bg-primary/90 text-background-dark transition-all shadow-[0_0_15px_rgba(19,236,19,0.3)]"
+                title="Install ZenFlow"
+                aria-label="Install ZenFlow"
+              >
+                <Download size={18} />
+              </button>
+              <button
+                onClick={handleInstallClick}
+                className="hidden sm:flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-primary hover:bg-primary/90 text-background-dark text-sm font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(19,236,19,0.3)]"
+                title="Install ZenFlow"
+                aria-label="Install ZenFlow"
+              >
+                <Download size={16} />
+                Install
+              </button>
+            </>
+          ) : null
         }
       />
 
