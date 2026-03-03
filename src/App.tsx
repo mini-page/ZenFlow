@@ -10,6 +10,7 @@ import BreathStudio from './components/BreathStudio';
 import Hydration from './components/Hydration';
 import RecoveryTracker from './components/RecoveryTracker';
 import TaskSoil from './components/TaskSoil';
+import Journal from './components/Journal';
 import HabitTracker from './components/HabitTracker';
 import SoundSanctuary from './components/SoundSanctuary';
 import StretchBreak from './components/StretchBreak';
@@ -38,6 +39,7 @@ function KeyboardManager({ currentView, setCurrentView }: { currentView: View, s
         case 'h': setCurrentView('habits'); break;
         case 'r': setCurrentView('recovery'); break;
         case 't': setCurrentView('tasks'); break;
+        case 'n': setCurrentView('journal'); break;
         case 's': setCurrentView('sounds'); break;
         case 'b': setCurrentView('breathe'); break;
         case 'x': setCurrentView('stretch'); break;
@@ -269,6 +271,7 @@ function AppContent() {
       case 'hydrate': return <Hydration onBack={() => setCurrentView('dashboard')} />;
       case 'recovery': return <RecoveryTracker onBack={() => setCurrentView('dashboard')} />;
       case 'tasks': return <TaskSoil onBack={() => setCurrentView('dashboard')} />;
+      case 'journal': return <Journal onBack={() => setCurrentView('dashboard')} />;
       case 'habits': return <HabitTracker onBack={() => setCurrentView('dashboard')} />;
       case 'sounds': return <SoundSanctuary onBack={() => setCurrentView('dashboard')} />;
       case 'stretch': return <StretchBreak onBack={() => setCurrentView('dashboard')} />;

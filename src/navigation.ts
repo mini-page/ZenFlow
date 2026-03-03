@@ -5,6 +5,7 @@ export type AppView =
   | 'hydrate'
   | 'recovery'
   | 'tasks'
+  | 'journal'
   | 'habits'
   | 'sounds'
   | 'stretch'
@@ -22,6 +23,7 @@ export interface NavItem {
     | 'droplet'
     | 'moon-star'
     | 'list-todo'
+    | 'book-open'
     | 'music'
     | 'activity'
     | 'cpu'
@@ -37,6 +39,7 @@ export interface NavItem {
     { view: 'dashboard', label: 'Dashboard', group: 'Core', shortcut: 'D / Esc', icon: 'leaf' },
     { view: 'focus', label: 'Focus', group: 'Core', shortcut: 'F', icon: 'timer' },
     { view: 'tasks', label: 'Tasks', group: 'Core', shortcut: 'T', icon: 'list-todo' },
+    { view: 'journal', label: 'Zen Notes', group: 'Core', shortcut: 'N', icon: 'book-open' },
     { view: 'habits', label: 'Forest Floor', group: 'Core', shortcut: 'H', icon: 'sparkles' },
     { view: 'breathe', label: 'Breathe', group: 'Wellness', shortcut: 'B', icon: 'wind' },
     { view: 'hydrate', label: 'Hydrate', group: 'Wellness', shortcut: 'W', icon: 'droplet' },        

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Leaf, Settings, LucideIcon, Timer, Wind, Droplet, MoonStar, ListTodo, Music, Activity, Cpu, Zap, X } from 'lucide-react';
+import { ArrowLeft, Leaf, Settings, LucideIcon, Timer, Wind, Droplet, MoonStar, ListTodo, BookOpen, Music, Activity, Cpu, Sparkles, Zap, X } from 'lucide-react';
 import { AppView, NAV_GROUPS, NAV_ITEMS } from '../navigation';
 
 interface SharedHeaderProps {
@@ -31,9 +31,11 @@ export default function SharedHeader({
     droplet: Droplet,
     'moon-star': MoonStar,
     'list-todo': ListTodo,
+    'book-open': BookOpen,
     music: Music,
     activity: Activity,
     cpu: Cpu,
+    sparkles: Sparkles,
   };
 
   const groupedItems = useMemo(
@@ -56,6 +58,16 @@ export default function SharedHeader({
       icon: 'bg-amber-100 text-amber-700',
       chip: 'bg-amber-50 text-amber-700 border-amber-200',
       selected: 'bg-amber-50 border-amber-200 text-slate-900',
+    },
+    journal: {
+      icon: 'bg-rose-100 text-rose-700',
+      chip: 'bg-rose-50 text-rose-700 border-rose-200',
+      selected: 'bg-rose-50 border-rose-200 text-slate-900',
+    },
+    habits: {
+      icon: 'bg-fuchsia-100 text-fuchsia-700',
+      chip: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+      selected: 'bg-fuchsia-50 border-fuchsia-200 text-slate-900',
     },
     breathe: {
       icon: 'bg-cyan-100 text-cyan-700',
@@ -257,8 +269,12 @@ export default function SharedHeader({
             <div className="p-3 overflow-y-auto max-h-[46vh] custom-scrollbar space-y-2">
               {groupedItems.map(item => {
                 const isActive = item.view === currentView;
-                const IconComp = iconMap[item.icon];
-                const tones = toneMap[item.view];
+                const IconComp = iconMap[item.icon] || Sparkles;
+                const tones = toneMap[item.view] || {
+                  icon: 'bg-slate-100 text-slate-700',
+                  chip: 'bg-slate-100 text-slate-600 border-slate-200',
+                  selected: 'bg-slate-100 border-slate-300 text-slate-900',
+                };
                 return (
                   <button
                     key={item.view}
