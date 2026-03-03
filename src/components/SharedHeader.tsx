@@ -23,6 +23,7 @@ export default function SharedHeader({
   const [activeGroup, setActiveGroup] = useState<'Core' | 'Wellness' | 'Tools'>(initialGroup);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedView, setSelectedView] = useState<AppView>(currentView);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   const iconMap: Record<string, LucideIcon> = {
     leaf: Leaf,
@@ -196,6 +197,14 @@ export default function SharedHeader({
     window.dispatchEvent(event);
   };
 
+  const switchGroupByOffset = (offset: -1 | 1) => {
+    const currentGroupIndex = NAV_GROUPS.indexOf(activeGroup);
+    const nextGroup = NAV_GROUPS[(currentGroupIndex + offset + NAV_GROUPS.length) % NAV_GROUPS.length];
+    setActiveGroup(nextGroup);
+    const nextItems = NAV_ITEMS.filter(item => item.group === nextGroup);
+    if (nextItems.length > 0) setSelectedView(nextItems[0].view);
+  };
+
   return (
     <>
       <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[min(94vw,1080px)]">
@@ -233,7 +242,32 @@ export default function SharedHeader({
 
       <div className="fixed bottom-6 right-6 z-[90] flex flex-col items-end gap-3">
         {isFabOpen && (
-          <div className="w-[min(92vw,360px)] max-h-[68vh] overflow-hidden rounded-3xl bg-white/92 backdrop-blur-xl border border-white/70 shadow-2xl">
+          <div
+            className="w-[min(92vw,360px)] max-h-[68vh] overflow-hidden rounded-3xl bg-white/92 backdrop-blur-xl border border-white/70 shadow-2xl"
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              if (!touch) return;
+              setTouchStart({ x: touch.clientX, y: touch.clientY });
+            }}
+            onTouchEnd={(e) => {
+              if (!touchStart) return;
+              const touch = e.changedTouches[0];
+              if (!touch) return;
+
+              const dx = touch.clientX - touchStart.x;
+              const dy = touch.clientY - touchStart.y;
+              const absDx = Math.abs(dx);
+              const absDy = Math.abs(dy);
+
+              // Horizontal-only swipe for category switch, preserving vertical list scroll.
+              if (absDx >= 40 && absDx > absDy + 10) {
+                if (dx > 0) switchGroupByOffset(-1);
+                else switchGroupByOffset(1);
+              }
+
+              setTouchStart(null);
+            }}
+          >
             <div className="p-4 border-b border-slate-200/70">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-black text-slate-800">Quick Traverse</p>
