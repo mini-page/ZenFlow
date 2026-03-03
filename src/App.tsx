@@ -23,6 +23,12 @@ import SharedHeader from './components/SharedHeader';
 import { Info, Timer, Play, Pause, Music, X } from 'lucide-react';
 
 export type View = AppView;
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+const PWA_PROMPT_STATE_KEY = 'zenflow_pwa_prompt_state';
 
 // Global keyboard shortcuts manager
 function KeyboardManager({ currentView, setCurrentView }: { currentView: View, setCurrentView: (v: View) => void }) {
@@ -236,6 +242,8 @@ function AppContent() {
     const saved = localStorage.getItem('zenflow_current_view');
     return (saved as View) || 'dashboard';
   });
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const installPromptTriedRef = React.useRef(false);
 
   const { isActive, timeLeft, isBreak } = useAppContext();
 
@@ -262,6 +270,55 @@ function AppContent() {
     window.addEventListener('navigate', handleNavigate);
     return () => window.removeEventListener('navigate', handleNavigate);
   }, []);
+
+  useEffect(() => {
+    const savedPromptState = localStorage.getItem(PWA_PROMPT_STATE_KEY);
+    if (savedPromptState === 'accepted' || savedPromptState === 'dismissed') return;
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    const handleAppInstalled = () => {
+      localStorage.setItem(PWA_PROMPT_STATE_KEY, 'accepted');
+      setDeferredInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  useEffect(() => {
+    const savedPromptState = localStorage.getItem(PWA_PROMPT_STATE_KEY);
+    if (savedPromptState === 'accepted' || savedPromptState === 'dismissed') return;
+    if (currentView !== 'dashboard') return;
+    if (!deferredInstallPrompt) return;
+    if (installPromptTriedRef.current) return;
+
+    installPromptTriedRef.current = true;
+
+    (async () => {
+      try {
+        await deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          localStorage.setItem(PWA_PROMPT_STATE_KEY, 'accepted');
+        } else {
+          localStorage.setItem(PWA_PROMPT_STATE_KEY, 'dismissed');
+        }
+      } catch {
+        localStorage.setItem(PWA_PROMPT_STATE_KEY, 'dismissed');
+      } finally {
+        setDeferredInstallPrompt(null);
+      }
+    })();
+  }, [currentView, deferredInstallPrompt]);
 
   const renderView = () => {
     switch (currentView) {
