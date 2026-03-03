@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, MoonStar, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, Sparkles } from 'lucide-react';
+import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, BookOpen, Music, Activity, MoonStar, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, Sparkles } from 'lucide-react';
 import { AppView } from '../navigation';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
@@ -475,7 +475,7 @@ export default function Dashboard({ onNavigate }: Props) {
           </div>
 
           {/* Action Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 pb-10">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pb-10">
             <button onClick={() => onNavigate('focus')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
               <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary/15 text-primary-dark text-[9px] font-black uppercase tracking-[0.12em] border border-primary/25">F</span>
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/30 transition-colors">
@@ -522,6 +522,18 @@ export default function Dashboard({ onNavigate }: Props) {
                 <p className="text-slate-500 text-xs mt-1">Manage task seeds</p>
               </div>
               <div className="absolute inset-0 bg-amber-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+
+            <button onClick={() => onNavigate('journal')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-[0.12em] border border-rose-200">N</span>
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
+                <BookOpen className="text-rose-700 group-hover:-rotate-6 transition-transform duration-300" size={20} />
+              </div>
+              <div>
+                <h3 className="text-slate-900 font-bold text-base">Zen Notes</h3>
+                <p className="text-slate-500 text-xs mt-1">Journal reflections</p>
+              </div>
+              <div className="absolute inset-0 bg-rose-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
             <button onClick={() => onNavigate('habits')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
