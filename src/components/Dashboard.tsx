@@ -248,6 +248,16 @@ export default function Dashboard({ onNavigate }: Props) {
   });
   const maxMinutes = Math.max(...weeklyData.map(d => d.minutes), 60);
 
+  const forceUpdate = async () => {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration => registration.unregister()));
+    }
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+    window.location.reload();
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-300 relative overflow-hidden">
       {/* Background Elements: Morning Sun & Clouds */}
