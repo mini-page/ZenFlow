@@ -115,7 +115,7 @@ export default function HabitTracker({ onBack }: { onBack: () => void }) {
     return habits.filter(h => h.completedDates.includes(date)).length;
   };
 
-  const longestStreak = Math.max(...habits.map(h => h.streak), 0);
+  const longestStreak = habits.reduce((max, h) => Math.max(max, h.streak), 0);
 
   const filteredHabits = activeCategory === 'All' 
     ? habits 

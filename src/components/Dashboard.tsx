@@ -248,7 +248,7 @@ export default function Dashboard({ onNavigate }: Props) {
       .reduce((sum, s) => sum + s.duration, 0);
     return { date, minutes };
   });
-  const maxMinutes = Math.max(...weeklyData.map(d => d.minutes), 60);
+  const maxMinutes = weeklyData.reduce((max, d) => Math.max(max, d.minutes), 60);
 
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-300 relative overflow-hidden">
