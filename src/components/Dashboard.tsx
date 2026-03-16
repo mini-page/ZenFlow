@@ -199,10 +199,6 @@ export default function Dashboard({ onNavigate }: Props) {
   const priorityTasks = tasks ? tasks.filter(t => !t.completed && t.priority > 0).sort((a, b) => b.priority - a.priority).slice(0, 2) : [];
   const activeSounds = sounds ? sounds.filter(s => playing[s.id]) : [];
 
-  const togglePlay = (id: string) => {
-    setPlaying(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
   const completedTasksCount = (tasks || []).filter(t => t.completed).length;
   const todaysDateKey = now.toISOString().split('T')[0];
   const todaysFocusSessions = sessions.filter(s => s.completed_at && s.completed_at.startsWith(todaysDateKey)).length;
