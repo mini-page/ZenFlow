@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Square, Pause, Play, RotateCcw, Edit3, X, Timer, History, Calendar, CheckCircle2, Settings, SkipForward, ChevronDown } from 'lucide-react';
+import { Square, Pause, Play, RotateCcw, X, Timer, History, CheckCircle2, Settings, SkipForward, ChevronDown } from 'lucide-react';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
 import { formatTime } from '../utils/format';
