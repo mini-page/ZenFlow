@@ -218,9 +218,7 @@ export default function Dashboard({ onNavigate }: Props) {
   const forceUpdate = async () => {
     if ('serviceWorker' in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        await registration.unregister();
-      }
+      await Promise.all(registrations.map(registration => registration.unregister()));
     }
     const cacheNames = await caches.keys();
     await Promise.all(cacheNames.map(name => caches.delete(name)));
