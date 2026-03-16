@@ -143,7 +143,7 @@ function AudioManager() {
 
       if (playing[sound.id]) {
         if (audio.paused) {
-          audio.play().catch(e => console.log('Audio playback prevented:', e));
+          audio.play().catch(() => {});
         }
       } else {
         if (!audio.paused) {

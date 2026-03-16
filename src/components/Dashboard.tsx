@@ -77,9 +77,7 @@ export default function Dashboard({ onNavigate }: Props) {
             else if (code >= 1 && code <= 3) condition = 'cloudy';
             
             setWeather({ condition, temp: Math.round(data.current_weather?.temperature || 72) });
-          }, () => {
-            console.log('Geolocation denied or failed');
-          });
+          }, () => {});
         }
       } catch (e) { console.error('Weather fetch failed', e); }
     };
