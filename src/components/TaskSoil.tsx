@@ -11,9 +11,13 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
   const [overlayIcon, setOverlayIcon] = useState<'bloom' | 'add' | null>(null);
   
   // Sidebar State
-  const [dailyNote, setDailyNote] = useState('');
+  const today = new Date().toISOString().split('T')[0];
+  const [dailyNote, setDailyNote] = useState(() => {
+    return localStorage.getItem(`zenflow_note_${new Date().toISOString().split('T')[0]}`) || '';
+  });
   const [isNoteSaved, setIsNoteSaved] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [mobilePanelTouchStart, setMobilePanelTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   const overlayTimeoutRef = useRef<any>(null);
 
@@ -113,6 +117,7 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
   });
 
   const saveNote = () => {
+    localStorage.setItem(`zenflow_note_${today}`, dailyNote);
     setIsNoteSaved(true);
     setTimeout(() => setIsNoteSaved(false), 2000);
   };
@@ -129,6 +134,7 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Task Soil" 
         onBack={onBack} 
+        currentView="tasks"
         icon={Sprout} 
         iconColor="text-[#2D5A27]"
       />
@@ -377,8 +383,34 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
 
       {/* Mobile Sidebar Overlay */}
       {showMobileSidebar && (
-        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center p-4 xl:hidden">
-          <div className="bg-background-light w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85dvh] animate-in slide-in-from-bottom-10 border border-white/60">
+        <div
+          className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center p-4 xl:hidden"
+          onClick={() => setShowMobileSidebar(false)}
+        >
+          <div
+            className="bg-background-light w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85dvh] animate-in slide-in-from-bottom-10 border border-white/60"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              if (!touch) return;
+              setMobilePanelTouchStart({ x: touch.clientX, y: touch.clientY });
+            }}
+            onTouchEnd={(e) => {
+              if (!mobilePanelTouchStart) return;
+              const touch = e.changedTouches[0];
+              if (!touch) return;
+
+              const dx = touch.clientX - mobilePanelTouchStart.x;
+              const dy = touch.clientY - mobilePanelTouchStart.y;
+              const absDx = Math.abs(dx);
+
+              // Close only on intentional downward swipe; keep normal scrolling behavior.
+              if (dy >= 70 && dy > absDx + 20) {
+                setShowMobileSidebar(false);
+              }
+              setMobilePanelTouchStart(null);
+            }}
+          >
             <div className="p-6 border-b border-sage-200 flex justify-between items-center shrink-0">
               <h3 className="font-serif text-xl font-bold text-[#1A2F1A] flex items-center gap-2">
                 <Smile size={20} className="text-[#2D5A27]" />

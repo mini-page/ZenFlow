@@ -19,6 +19,7 @@ export default function BodySpirit({ onBack, onStartStretch }: BodySpiritProps) 
       <SharedHeader 
         title="Body & Spirit" 
         onBack={onBack} 
+        currentView="stretch"
         icon={Accessibility} 
         iconColor="text-primary"
       />

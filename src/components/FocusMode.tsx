@@ -2,13 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Square, Pause, Play, RotateCcw, Edit3, X, Timer, History, Calendar, CheckCircle2, Settings, SkipForward, ChevronDown } from 'lucide-react';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
-
-interface FocusSession {
-  id: number;
-  duration: number;
-  task_name: string;
-  completed_at: string;
-}
+import { formatTime } from '../utils/format';
+import { FocusSession } from '../utils/types';
 
 export default function FocusMode({ onBack }: { onBack: () => void }) {
   const {
@@ -67,12 +62,23 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
           setShowCelebration(false);
         }, 3000);
         
-        // Save session to backend
+        // Save session locally and attempt backend sync
+        const newSession: FocusSession = {
+          id: Date.now(),
+          duration: focusDuration,
+          task_name: task,
+          completed_at: new Date().toISOString()
+        };
+        const cached = JSON.parse(localStorage.getItem('zenflow_sessions_cache') || '[]');
+        const updated = [newSession, ...cached].slice(0, 50);
+        localStorage.setItem('zenflow_sessions_cache', JSON.stringify(updated));
+        setHistory(updated);
+
         fetch('/api/sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ duration: focusDuration, task_name: task })
-        }).then(() => fetchHistory());
+        }).then(() => fetchHistory()).catch(() => {});
       } else {
         // A break just ended, back to focus
         triggerNotification('Break Over!', 'Time to get back to focus.');
@@ -84,25 +90,26 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
   const fetchHistory = async () => {
     try {
       const res = await fetch('/api/sessions');
+      if (!res.ok) throw new Error('API unavailable');
       const data = await res.json();
       setHistory(data);
-    } catch (e) { console.error(e); }
+      localStorage.setItem('zenflow_sessions_cache', JSON.stringify(data));
+    } catch (e) {
+      // Fallback to cached sessions
+      const cached = localStorage.getItem('zenflow_sessions_cache');
+      if (cached) setHistory(JSON.parse(cached));
+    }
   };
 
   useEffect(() => { fetchHistory(); }, []);
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  };
 
   const totalTime = (isBreak ? breakDuration : focusDuration) * 60;
   const progress = ((totalTime - timeLeft) / totalTime) * 289;
 
   const handleToggleActive = () => {
-    setIsActive(!isActive);
-    setOverlayIcon(!isActive ? 'play' : 'pause');
+    const wasActive = isActive;
+    toggleTimer();
+    setOverlayIcon(!wasActive ? 'play' : 'pause');
     if (overlayTimeoutRef.current) clearTimeout(overlayTimeoutRef.current);
     overlayTimeoutRef.current = setTimeout(() => setOverlayIcon(null), 1000);
   };
@@ -141,6 +148,7 @@ export default function FocusMode({ onBack }: { onBack: () => void }) {
 
       <SharedHeader 
         title="Focus Mode" onBack={onBack} icon={Timer} iconColor={isBreak ? "text-blue-400" : "text-rose-500"}
+        currentView="focus"
         actions={
           <div className="flex gap-2">
             <button onClick={() => { setShowModal(true); setModalTab('history'); }} className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-sage-600 hover:bg-primary/20 transition-all shadow-sm" title="History">
