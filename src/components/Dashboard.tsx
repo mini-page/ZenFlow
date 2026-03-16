@@ -21,7 +21,8 @@ export default function Dashboard({ onNavigate }: Props) {
     isActive, timeLeft, isBreak, task, toggleTimer,
     tasks,
     playing, sounds, setPlaying,
-    water, hydrationGoal
+    water, hydrationGoal,
+    showToast
   } = useAppContext();
 
   // 1. Initialize ALL states at the top
@@ -80,6 +81,7 @@ export default function Dashboard({ onNavigate }: Props) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((e) => {
+        showToast('Unable to enter fullscreen. Please check your browser settings.', 'error');
         console.error(`Error attempting to enable fullscreen: ${e.message}`);
       });
       setIsFullscreen(true);

@@ -87,6 +87,10 @@ interface AppContextType {
   setWater: (w: number | ((prev: number) => number)) => void;
   hydrationGoal: number;
   setHydrationGoal: (g: number) => void;
+
+  // Toast State
+  toast: { message: string; type: 'success' | 'error' | 'info' } | null;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -163,6 +167,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem('zenflow_hydration_goal');
     return saved ? parseInt(saved) : 2000;
   });
+
+  // Toast
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
 
   // Check for day change every minute and reset water if needed
   useEffect(() => {
@@ -379,7 +391,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       breathingPatterns, setBreathingPatterns,
       breathingHistory, setBreathingHistory,
       water, setWater,
-      hydrationGoal, setHydrationGoal
+      hydrationGoal, setHydrationGoal,
+      toast, showToast
     }}>
       {children}
     </AppContext.Provider>
