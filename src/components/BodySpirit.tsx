@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, User, Accessibility, Clock, Calendar, Play, ChevronRight, Timer, Footprints, Bell, Volume2, Chair, Smile, Leaf } from 'lucide-react';
+import { Settings, User, Accessibility, Clock, Calendar, Play, ChevronRight, Timer, Footprints, Bell, Volume2, Armchair, Smile, Leaf, X } from 'lucide-react';
 import SharedHeader from './SharedHeader';
 
 interface BodySpiritProps {
@@ -163,7 +163,7 @@ export default function BodySpirit({ onBack, onStartStretch }: BodySpiritProps) 
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="bg-primary/10 p-2 rounded-lg text-primary">
-                      <Chair size={24} />
+                      <Armchair size={24} />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">Desk Setup Guide</h3>
                   </div>
