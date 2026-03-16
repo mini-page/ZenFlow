@@ -63,9 +63,7 @@ export default function Dashboard({ onNavigate }: Props) {
             else if (code >= 1 && code <= 3) condition = 'cloudy';
             
             setWeather({ condition, temp: Math.round(data.current_weather?.temperature || 72) });
-          }, () => {
-            console.log('Geolocation denied or failed');
-          });
+          }, () => {});
         }
       } catch (e) { console.error('Weather fetch failed', e); }
     };
@@ -242,13 +240,29 @@ export default function Dashboard({ onNavigate }: Props) {
     return d.toISOString().split('T')[0];
   });
   
-  const weeklyData = last7Days.map(date => {
-    const minutes = sessions
-      .filter(s => s.completed_at && s.completed_at.startsWith(date))
-      .reduce((sum, s) => sum + s.duration, 0);
-    return { date, minutes };
+  const sessionsByDate: Record<string, number> = {};
+  sessions.forEach(s => {
+    if (s.completed_at) {
+      const date = s.completed_at.substring(0, 10);
+      sessionsByDate[date] = (sessionsByDate[date] || 0) + s.duration;
+    }
   });
+
+  const weeklyData = last7Days.map(date => ({
+    date,
+    minutes: sessionsByDate[date] || 0
+  }));
   const maxMinutes = Math.max(...weeklyData.map(d => d.minutes), 60);
+
+  const forceUpdate = async () => {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration => registration.unregister()));
+    }
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+    window.location.reload();
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-300 relative overflow-hidden">

@@ -1,3 +1,6 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Leaf, Settings, LucideIcon, Info } from 'lucide-react';
+import IconButton from './IconButton';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Leaf, Settings, LucideIcon, Timer, Wind, Droplet, MoonStar, ListTodo, BookOpen, Music, Activity, Cpu, Sparkles, Zap, X } from 'lucide-react';
 import { AppView, NAV_GROUPS, NAV_ITEMS } from '../navigation';
@@ -206,12 +209,40 @@ export default function SharedHeader({
   };
 
   return (
-    <>
-      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[min(94vw,1080px)]">
-        <div className="glass-panel px-4 md:px-6 py-3 rounded-full flex items-center justify-between gap-3 shadow-2xl border border-white/40 backdrop-blur-xl">
-          <div className="flex items-center gap-3 text-forest-deep min-w-0">
-            <button onClick={onBack} className="p-2 hover:bg-primary/20 rounded-full transition-colors md:hidden">
-              <ArrowLeft size={20} />
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-forest-deep/5 px-6 md:px-10 py-4 glass-panel sticky top-0 z-50 shrink-0">
+      <div className="flex items-center gap-4 text-forest-deep">
+        <IconButton
+          icon={ArrowLeft}
+          onClick={onBack}
+          aria-label="Go back"
+          className="p-2 hover:bg-primary/20 rounded-lg transition-colors md:hidden"
+        />
+        <div className={`size-8 flex items-center justify-center bg-primary rounded-lg text-forest-deep`}>
+          <Leaf size={18} strokeWidth={3} className="fill-current" />
+        </div>
+        <h2 className="text-forest-deep text-xl font-serif font-bold leading-tight tracking-tight">Zen Flow</h2>
+      </div>
+      
+      <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
+        <nav className="hidden md:flex items-center">
+          <div ref={containerRef} className="tab-switcher relative flex items-center bg-white/40 p-[6px] rounded-full backdrop-blur-md border border-white/50 shadow-sm">
+            {/* Sliding Background */}
+            <div 
+              className="absolute top-[6px] left-[6px] h-[calc(100%-12px)] bg-white rounded-full shadow-md transition-all duration-300 ease-out z-10"
+              style={{
+                width: `${sliderStyle.width}px`,
+                transform: sliderStyle.transform
+              }}
+            />
+            
+            {/* Current Page Tab */}
+            <button 
+              ref={currentTabRef}
+              onClick={() => setActiveTab('current')}
+              className={`relative z-20 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-200 flex items-center gap-2 ${activeTab === 'current' ? 'text-forest-deep' : 'text-forest-deep/50 hover:text-forest-deep/70'}`}
+            >
+              {Icon && <Icon size={16} className={activeTab === 'current' ? iconColor : 'text-slate-400'} />}
+              <span>{title}</span>
             </button>
             <div className="size-8 flex items-center justify-center bg-primary rounded-full text-forest-deep shrink-0">
               <Leaf size={18} strokeWidth={3} className="fill-current" />
@@ -228,6 +259,17 @@ export default function SharedHeader({
               </button>
             )}
           </div>
+        </nav>
+        
+        <div className="flex gap-2">
+          {actions}
+          {!actions && (
+            <IconButton
+              icon={Settings}
+              aria-label="Open settings"
+              className="flex size-10 items-center justify-center rounded-xl bg-white/50 text-forest-deep hover:bg-primary/20 transition-all"
+            />
+          )}
         </div>
       </header>
       <div className="h-24 shrink-0" aria-hidden />
