@@ -55,7 +55,16 @@ async function startServer() {
 
   app.post("/api/sessions", (req, res) => {
     const { duration, task_name } = req.body;
-    const result = db.prepare("INSERT INTO focus_sessions (duration, task_name) VALUES (?, ?)").run(duration, task_name);
+
+    if (typeof duration !== "number" || duration <= 0 || !Number.isInteger(duration)) {
+      return res.status(400).json({ error: "Invalid duration. Must be a positive integer." });
+    }
+
+    if (typeof task_name !== "string" || task_name.trim() === "" || task_name.length > 200) {
+      return res.status(400).json({ error: "Invalid task name. Must be a non-empty string up to 200 characters." });
+    }
+
+    const result = db.prepare("INSERT INTO focus_sessions (duration, task_name) VALUES (?, ?)").run(duration, task_name.trim());
     res.json({ id: result.lastInsertRowid });
   });
 
@@ -66,7 +75,12 @@ async function startServer() {
 
   app.post("/api/affirmations", (req, res) => {
     const { text, is_custom } = req.body;
-    const result = db.prepare("INSERT INTO affirmations (text, is_custom) VALUES (?, ?)").run(text, is_custom ? 1 : 0);
+
+    if (typeof text !== "string" || text.trim() === "" || text.length > 500) {
+      return res.status(400).json({ error: "Invalid text. Must be a non-empty string up to 500 characters." });
+    }
+
+    const result = db.prepare("INSERT INTO affirmations (text, is_custom) VALUES (?, ?)").run(text.trim(), is_custom ? 1 : 0);
     res.json({ id: result.lastInsertRowid });
   });
 
