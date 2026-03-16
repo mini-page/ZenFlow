@@ -74,9 +74,10 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
   const activeSounds = sounds.filter(s => playing[s.id]);
   const nowPlayingName = activeSounds.length > 0 ? activeSounds[activeSounds.length - 1].name : null;
 
+  const query = searchQuery.toLowerCase();
   const filteredSounds = sounds.filter(s => {
     const matchesCategory = activeCategory === 'All' ? true : (activeCategory === 'Favorites' ? favorites.has(s.id) : s.category === activeCategory);
-    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = s.name.toLowerCase().includes(query) || s.description.toLowerCase().includes(query);
     return matchesCategory && matchesSearch;
   });
 
@@ -103,6 +104,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Sounds" 
         onBack={onBack} 
+        currentView="sounds"
         icon={Music} 
         actions={
           <div className="flex gap-2">

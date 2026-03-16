@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, Music, Activity, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, RotateCcw } from 'lucide-react';
-import { View } from '../App';
+import { Settings, Timer, Droplets, CheckCircle2, Wind, ListTodo, BookOpen, Music, Activity, MoonStar, Edit2, Check, Quote, Plus, Trash2, ChevronRight, Zap, X, Play, Pause, Sun, Moon, CloudSun, Coffee, CupSoda, Maximize2, Minimize2, Accessibility, BarChart3, Sparkles } from 'lucide-react';
+import { AppView } from '../navigation';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
+import { formatTime } from '../utils/format';
+import { FocusSession } from '../utils/types';
 
 interface Affirmation {
   id: number;
@@ -10,15 +12,8 @@ interface Affirmation {
   is_custom: number;
 }
 
-interface FocusSession {
-  id: number;
-  duration: number;
-  task_name: string;
-  completed_at: string;
-}
-
 interface Props {
-  onNavigate: (view: View) => void;
+  onNavigate: (view: AppView) => void;
 }
 
 export default function Dashboard({ onNavigate }: Props) {
@@ -30,7 +25,7 @@ export default function Dashboard({ onNavigate }: Props) {
   } = useAppContext();
 
   // 1. Initialize ALL states at the top
-  const [userName, setUserName] = useState(() => localStorage.getItem('zenflow_username') || 'Alex');
+  const [userName, setUserName] = useState(() => localStorage.getItem('zenflow_username') || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [affirmations, setAffirmations] = useState<Affirmation[]>([]);
   const [currentAffirmationIndex, setCurrentAffirmationIndex] = useState(0);
@@ -41,7 +36,7 @@ export default function Dashboard({ onNavigate }: Props) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [weather, setWeather] = useState<{ condition: string; temp: number }>({ condition: 'clear', temp: 72 });
-  const [streak, setStreak] = useState(0);
+  const [now, setNow] = useState(() => new Date());
 
   // 2. Effects
   useEffect(() => {
@@ -54,15 +49,6 @@ export default function Dashboard({ onNavigate }: Props) {
   }, []);
 
   useEffect(() => {
-    // Determine streak (consecutive sessions today)
-    if (!sessions || sessions.length === 0) {
-      setStreak(0);
-      return;
-    }
-    const today = new Date().toISOString().split('T')[0];
-    const todaysSessions = sessions.filter(s => s.completed_at && s.completed_at.startsWith(today)).length;
-    setStreak(todaysSessions);
-
     const fetchWeather = async () => {
       try {
         if ('geolocation' in navigator) {
@@ -77,14 +63,17 @@ export default function Dashboard({ onNavigate }: Props) {
             else if (code >= 1 && code <= 3) condition = 'cloudy';
             
             setWeather({ condition, temp: Math.round(data.current_weather?.temperature || 72) });
-          }, () => {
-            console.log('Geolocation denied or failed');
-          });
+          }, () => {});
         }
       } catch (e) { console.error('Weather fetch failed', e); }
     };
     fetchWeather();
-  }, [sessions]);
+  }, []);
+
+  useEffect(() => {
+    const tick = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(tick);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -108,16 +97,27 @@ export default function Dashboard({ onNavigate }: Props) {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  const DEFAULT_AFFIRMATIONS: Affirmation[] = [
+    { id: 1, text: 'I am capable of achieving my goals.', is_custom: 0 },
+    { id: 2, text: 'Every breath I take fills me with peace.', is_custom: 0 },
+    { id: 3, text: 'I focus on what I can control and let go of the rest.', is_custom: 0 },
+    { id: 4, text: 'My productivity is a reflection of my focus, not my speed.', is_custom: 0 },
+    { id: 5, text: 'I am worthy of rest and rejuvenation.', is_custom: 0 },
+    { id: 6, text: 'Today is a new opportunity to grow my garden.', is_custom: 0 },
+  ];
+
   const fetchAffirmations = async () => {
     try {
       const res = await fetch('/api/affirmations');
+      if (!res.ok) throw new Error('API unavailable');
       const data = await res.json();
       setAffirmations(data);
+      localStorage.setItem('zenflow_affirmations_cache', JSON.stringify(data));
       if (data.length > 0) {
         const today = new Date().toDateString();
         const savedDate = localStorage.getItem('affirmationDate');
         const savedIndex = localStorage.getItem('affirmationIndex');
-        
+
         if (savedDate === today && savedIndex !== null) {
           setCurrentAffirmationIndex(parseInt(savedIndex));
         } else {
@@ -128,53 +128,73 @@ export default function Dashboard({ onNavigate }: Props) {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch affirmations:', error);
+      // Fallback: use cached or default affirmations
+      const cached = localStorage.getItem('zenflow_affirmations_cache');
+      const fallback = cached ? JSON.parse(cached) : DEFAULT_AFFIRMATIONS;
+      setAffirmations(fallback);
+      if (fallback.length > 0) {
+        const today = new Date().toDateString();
+        const savedDate = localStorage.getItem('affirmationDate');
+        const savedIndex = localStorage.getItem('affirmationIndex');
+        if (savedDate === today && savedIndex !== null) {
+          setCurrentAffirmationIndex(parseInt(savedIndex));
+        } else {
+          const randomIndex = Math.floor(Math.random() * fallback.length);
+          setCurrentAffirmationIndex(randomIndex);
+          localStorage.setItem('affirmationDate', today);
+          localStorage.setItem('affirmationIndex', randomIndex.toString());
+        }
+      }
     }
   };
 
   const fetchSessions = async () => {
     try {
       const res = await fetch('/api/sessions');
+      if (!res.ok) throw new Error('API unavailable');
       const data = await res.json();
       setSessions(data);
+      localStorage.setItem('zenflow_sessions_cache', JSON.stringify(data));
     } catch (e) {
-      console.error('Failed to fetch sessions:', e);
+      // Fallback to cached sessions
+      const cached = localStorage.getItem('zenflow_sessions_cache');
+      if (cached) setSessions(JSON.parse(cached));
     }
   };
 
   const addAffirmation = async () => {
     if (!newAffirmation.trim()) return;
+    const newItem: Affirmation = { id: Date.now(), text: newAffirmation.trim(), is_custom: 1 };
+    // Optimistic local update
+    const updated = [...affirmations, newItem];
+    setAffirmations(updated);
+    localStorage.setItem('zenflow_affirmations_cache', JSON.stringify(updated));
+    setNewAffirmation('');
     try {
       const res = await fetch('/api/affirmations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: newAffirmation, is_custom: 1 })
       });
-      if (res.ok) {
-        setNewAffirmation('');
-        fetchAffirmations();
-      }
+      if (res.ok) fetchAffirmations();
     } catch (error) {
-      console.error('Failed to add affirmation:', error);
+      // Already saved locally, will sync when backend is available
     }
   };
 
   const deleteAffirmation = async (id: number) => {
+    // Optimistic local update
+    const updated = affirmations.filter(a => a.id !== id);
+    setAffirmations(updated);
+    localStorage.setItem('zenflow_affirmations_cache', JSON.stringify(updated));
     try {
       await fetch(`/api/affirmations/${id}`, { method: 'DELETE' });
-      fetchAffirmations();
     } catch (error) {
-      console.error('Failed to delete affirmation:', error);
+      // Already removed locally
     }
   };
 
   const currentAffirmation = affirmations && affirmations.length > 0 ? affirmations[currentAffirmationIndex] : null;
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   const priorityTasks = tasks ? tasks.filter(t => !t.completed && t.priority > 0).sort((a, b) => b.priority - a.priority).slice(0, 2) : [];
   const activeSounds = sounds ? sounds.filter(s => playing[s.id]) : [];
@@ -184,21 +204,34 @@ export default function Dashboard({ onNavigate }: Props) {
   };
 
   const completedTasksCount = (tasks || []).filter(t => t.completed).length;
-
-  const hour = new Date().getHours();
+  const todaysDateKey = now.toISOString().split('T')[0];
+  const todaysFocusSessions = sessions.filter(s => s.completed_at && s.completed_at.startsWith(todaysDateKey)).length;
+  const hour = now.getHours();
   let greeting = 'Good evening,';
   let weatherIcon = <Moon size={14} className="text-indigo-400" />;
-  let weatherText = '65°F Clear';
 
   if (hour >= 5 && hour < 12) {
     greeting = 'Good morning,';
     weatherIcon = <Sun size={14} className="text-amber-500" />;
-    weatherText = '68°F Sunny';
   } else if (hour >= 12 && hour < 18) {
     greeting = 'Good afternoon,';
     weatherIcon = <CloudSun size={14} className="text-orange-400" />;
-    weatherText = '75°F Partly Cloudy';
   }
+
+  const getWeekNumber = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
+
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const fullDate = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const timezoneLabel = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, ' ');
+  const dayProgress = Math.round((((hour * 60) + now.getMinutes()) / 1440) * 100);
+  const weekNumber = getWeekNumber(now);
 
   // Calculate stats for chart
   const last7Days = Array.from({length: 7}, (_, i) => {
@@ -232,19 +265,13 @@ export default function Dashboard({ onNavigate }: Props) {
       <div className="absolute top-20 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
       
       <SharedHeader 
-        title="Dashboard" 
+        title="ZenFlow" 
         onBack={() => {}} 
-        showDashboardLink={false}
+        currentView="dashboard"
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={forceUpdate} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-rose-500 group" title="Refresh & Update App">
-              <RotateCcw size={20} className="group-hover:rotate-[-180deg] transition-transform duration-500" />
-            </button>
             <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group">
               <BarChart3 size={20} className="group-hover:scale-110 transition-transform" />
-            </button>
-            <button onClick={() => setShowQuickActions(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-amber-500 group">
-              <Zap size={20} className="group-hover:scale-110 transition-transform" />
             </button>
             <button onClick={toggleFullscreen} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group">
               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
@@ -254,130 +281,78 @@ export default function Dashboard({ onNavigate }: Props) {
       />
 
       <div className="relative z-10 flex-1 flex flex-col overflow-y-auto custom-scrollbar p-4 md:p-8">
-        {/* User Greeting Section */}
-        <div className="flex justify-between items-start mb-6 shrink-0 px-2">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-slate-500 text-sm font-medium">{greeting}</h2>
-              <div className="flex items-center gap-1.5 bg-white/50 px-2 py-0.5 rounded-full border border-white/40 shadow-sm">
-                {weather.condition === 'rain' ? <Droplets size={14} className="text-blue-400" /> : weatherIcon}
-                <span className="text-xs font-medium text-slate-600">{weather.temp}°F {weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}</span>
-              </div>
-            </div>
-            {isEditingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  onBlur={() => setIsEditingName(false)}
-                  onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-                  autoFocus
-                  className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-slate-900 w-full max-w-[200px]"
-                />
-                <button onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
-                  <Check size={20} />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingName(true)}>
-                <h1 className="text-slate-900 text-2xl font-bold tracking-tight">{userName}</h1>
-                <Edit2 size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col">
-          {/* Hero Section: The Living Garden */}
-          <div className="flex flex-col items-center justify-center relative mb-8 shrink-0 py-4">
-            <div className="relative w-full max-w-[500px] h-64 flex items-end justify-center animate-in fade-in zoom-in duration-1000">
-              <svg className="w-full h-full drop-shadow-2xl overflow-visible" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* The Ground / Terrain */}
-                <path d="M20 160 Q200 140 380 160 L380 190 Q200 200 20 190 Z" fill="#4ade80" opacity="0.2" />
-                <path d="M40 165 Q200 150 360 165 L360 185 Q200 195 40 185 Z" fill="#22c55e" opacity="0.3" />
+          {/* Hero Section: Live Time Dashboard */}
+          <div className="relative mb-8 shrink-0 animate-in fade-in zoom-in duration-700">
+            <div className="absolute -top-10 right-12 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="glass-panel relative rounded-[2.5rem] border border-white/60 shadow-sm p-6 md:p-8 overflow-hidden">
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-end">
+                <div className="lg:col-span-2">
+                  <div className="mb-3">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h2 className="text-slate-500 text-sm font-medium">{greeting}</h2>
+                      <div className="flex items-center gap-1.5 bg-white/60 px-2 py-0.5 rounded-full border border-white/50 shadow-sm">
+                        {weather.condition === 'rain' ? <Droplets size={14} className="text-blue-400" /> : weatherIcon}
+                        <span className="text-xs font-medium text-slate-600">{weather.temp}°F {weather.condition.charAt(0).toUpperCase() + weather.condition.slice(1)}</span>
+                      </div>
+                    </div>
+                    {isEditingName ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                          onBlur={() => setIsEditingName(false)}
+                          onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
+                          autoFocus
+                          className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-slate-900 w-full max-w-[220px]"
+                        />
+                        <button onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
+                          <Check size={20} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingName(true)}>
+                        <h1 className="text-slate-900 text-2xl font-bold tracking-tight">{userName || 'Your Name'}</h1>
+                        <Edit2 size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
+                  </div>
+                  <h2 className="font-groovy text-slate-900 text-[clamp(2.6rem,10vw,6.5rem)] leading-[0.95] tracking-[0.04em] tabular-nums">
+                    {timeString}
+                  </h2>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-white/70 border border-white/60 text-xs font-black uppercase tracking-wider text-slate-700">
+                      {dayName}
+                    </span>
+                    <span className="text-sm md:text-base font-semibold text-slate-600">{fullDate}</span>
+                  </div>
+                </div>
 
-                {/* Rain Animation */}
-                {weather.condition === 'rain' && Array.from({ length: 20 }).map((_, i) => (
-                  <line key={`rain-${i}`} x1={20 + (i * 20)} y1="0" x2={15 + (i * 20)} y2="10" stroke="#0ea5e9" strokeWidth="1" opacity="0.4">
-                    <animate attributeName="y1" from="-20" to="200" dur={`${0.5 + Math.random()}s`} repeatCount="indefinite" />
-                    <animate attributeName="y2" from="-10" to="210" dur={`${0.5 + Math.random()}s`} repeatCount="indefinite" />
-                  </line>
-                ))}
-                
-                {/* Hydration Pond */}
-                <g transform="translate(280, 165)">
-                  <ellipse cx="0" cy="5" rx="60" ry="15" fill="#bae6fd" opacity="0.4" />
-                  <ellipse cx="0" cy="5" rx={Math.min(55, (water/hydrationGoal) * 55)} ry={Math.min(12, (water/hydrationGoal) * 12)} fill="#0ea5e9" opacity="0.6">
-                    <animate attributeName="ry" values="10;12;10" dur="3s" repeatCount="indefinite" />
-                  </ellipse>
-                </g>
-
-                {/* Completed Task Trees */}
-                {Array.from({ length: Math.min(completedTasksCount, 8) }).map((_, i) => {
-                  const x = 60 + (i * 35);
-                  const scale = 0.8 + (Math.random() * 0.4);
-                  return (
-                    <g key={`tree-${i}`} transform={`translate(${x}, 165) scale(${scale})`}>
-                      <path d="M0 0 L0 -30" stroke="#78350f" strokeWidth="3" strokeLinecap="round" />
-                      <circle cx="0" cy="-35" r="12" fill={weather.condition === 'rain' ? '#064e3b' : '#166534'} />
-                      <circle cx="-8" cy="-28" r="8" fill={weather.condition === 'rain' ? '#065f46' : '#15803d'} />
-                      <circle cx="8" cy="-28" r="8" fill={weather.condition === 'rain' ? '#065f46' : '#15803d'} />
-                    </g>
-                  );
-                })}
-
-                {/* Focus Streak Birds */}
-                {streak >= 3 && Array.from({ length: Math.min(streak - 2, 5) }).map((_, i) => (
-                  <g key={`bird-${i}`} transform={`translate(0, ${40 + (i * 20)})`}>
-                    <path d="M0 0 Q5 -5 10 0 Q15 -5 20 0" stroke="#475569" strokeWidth="1.5" fill="none">
-                      <animateTransform attributeName="transform" type="translate" from="-50 0" to="450 0" dur={`${8 + (i * 2)}s`} repeatCount="indefinite" />
-                      <animate attributeName="d" values="M0 0 Q5 -5 10 0 Q15 -5 20 0; M0 0 Q5 5 10 0 Q15 5 20 0; M0 0 Q5 -5 10 0 Q15 -5 20 0" dur="0.5s" repeatCount="indefinite" />
-                    </path>
-                  </g>
-                ))}
-
-                {/* Focus Session Blooms */}
-                {sessions.slice(-12).map((session, i) => {
-                  const x = 40 + (i * 25) + (Math.sin(i) * 10);
-                  const y = 175 + (Math.cos(i) * 5);
-                  return (
-                    <g key={`bloom-${session.id}`} transform={`translate(${x}, ${y}) scale(0.6)`}>
-                      <path d="M0 0 L0 -10" stroke="#16a34a" strokeWidth="1.5" />
-                      <circle cx="0" cy="-12" r="4" fill="#fb7185" />
-                      <circle cx="-3" cy="-15" r="3" fill="#fda4af" opacity="0.8" />
-                      <circle cx="3" cy="-15" r="3" fill="#fda4af" opacity="0.8" />
-                      <circle cx="0" cy="-18" r="3" fill="#fda4af" opacity="0.8" />
-                    </g>
-                  );
-                })}
-
-                {/* Central Focus Core */}
-                <g transform="translate(200, 120)">
-                  {isActive && (
-                    <>
-                      <circle cx="0" cy="0" r="40" fill="url(#focusGlow)" opacity="0.3">
-                        <animate attributeName="r" values="35;45;35" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                      <circle cx="0" cy="0" r="15" fill="#13ec13">
-                        <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                    </>
-                  )}
-                  {!isActive && <circle cx="0" cy="45" r="5" fill="#cbd5e1" />}
-                </g>
-
-                <defs>
-                  <radialGradient id="focusGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#13ec13" />
-                    <stop offset="100%" stopColor="#13ec13" stopOpacity="0" />
-                  </radialGradient>
-                </defs>
-              </svg>
+                <div className="glass-panel rounded-2xl border border-white/60 p-4 md:p-5">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded-xl bg-white/70 border border-white/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-slate-400">Week</p>
+                      <p className="mt-1 text-lg font-black text-slate-900">{weekNumber}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/70 border border-white/60 p-3">
+                      <p className="font-black uppercase tracking-wider text-slate-400">Focus</p>
+                      <p className="mt-1 text-lg font-black text-slate-900">{todaysFocusSessions}</p>
+                    </div>
+                    <div className="col-span-2 rounded-xl bg-white/70 border border-white/60 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-black uppercase tracking-wider text-slate-400">Day Progress</p>
+                        <p className="font-black text-slate-700">{dayProgress}%</p>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-200/70 overflow-hidden">
+                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${dayProgress}%` }}></div>
+                      </div>
+                      <p className="mt-2 text-[11px] font-semibold text-slate-500 truncate">{timezoneLabel}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-center text-slate-500 text-xs mt-4 font-mono tracking-widest uppercase opacity-60">
-              {streak > 0 ? `Focus Streak: ${streak} | ` : ""}{completedTasksCount > 0 ? `Ecosystem Sustained by ${completedTasksCount} Completed Tasks` : "Your garden is waiting for its first seeds."}
-            </p>
           </div>
 
           {/* Bento Grid Layout */}
@@ -510,6 +485,7 @@ export default function Dashboard({ onNavigate }: Props) {
           {/* Action Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pb-10">
             <button onClick={() => onNavigate('focus')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-primary/15 text-primary-dark text-[9px] font-black uppercase tracking-[0.12em] border border-primary/25">F</span>
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/30 transition-colors">
                 <Timer className="text-primary-dark group-hover:rotate-12 transition-transform duration-300" size={20} />
               </div>
@@ -521,6 +497,7 @@ export default function Dashboard({ onNavigate }: Props) {
             </button>
 
             <button onClick={() => onNavigate('breathe')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-cyan-100 text-[#4c7b94] text-[9px] font-black uppercase tracking-[0.12em] border border-cyan-200">B</span>
               <div className="w-10 h-10 rounded-full bg-accent-water/20 flex items-center justify-center mb-3 group-hover:bg-accent-water/30 transition-colors">
                 <Wind className="text-[#5e8ea6] group-hover:scale-110 transition-transform duration-300" size={20} />
               </div>
@@ -532,6 +509,7 @@ export default function Dashboard({ onNavigate }: Props) {
             </button>
 
             <button onClick={() => onNavigate('hydrate')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black uppercase tracking-[0.12em] border border-blue-200">W</span>
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
                 <Droplets className="text-blue-600 group-hover:-translate-y-0.5 transition-transform duration-300" size={20} />
               </div>
@@ -543,36 +521,75 @@ export default function Dashboard({ onNavigate }: Props) {
             </button>
 
             <button onClick={() => onNavigate('tasks')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-[0.12em] border border-amber-200">T</span>
               <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-3 group-hover:bg-amber-200 transition-colors">
                 <ListTodo className="text-amber-700 group-hover:rotate-6 transition-transform duration-300" size={20} />
               </div>
               <div>
-                <h3 className="text-slate-900 font-bold text-base">Tasks</h3>
-                <p className="text-slate-500 text-xs mt-1">Manage garden tasks</p>
+                <h3 className="text-slate-900 font-bold text-base">Soil</h3>
+                <p className="text-slate-500 text-xs mt-1">Manage task seeds</p>
               </div>
               <div className="absolute inset-0 bg-amber-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
+            <button onClick={() => onNavigate('journal')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-[0.12em] border border-rose-200">N</span>
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
+                <BookOpen className="text-rose-700 group-hover:-rotate-6 transition-transform duration-300" size={20} />
+              </div>
+              <div>
+                <h3 className="text-slate-900 font-bold text-base">Zen Notes</h3>
+                <p className="text-slate-500 text-xs mt-1">Journal reflections</p>
+              </div>
+              <div className="absolute inset-0 bg-rose-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+
+            <button onClick={() => onNavigate('habits')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-[0.12em] border border-emerald-200">H</span>
+              <div className="w-10 h-10 rounded-full bg-[#86efac]/30 flex items-center justify-center mb-3 group-hover:bg-[#86efac]/50 transition-colors">
+                <Sparkles className="text-emerald-700 group-hover:rotate-6 transition-transform duration-300" size={20} />
+              </div>
+              <div>
+                <h3 className="text-slate-900 font-bold text-base">Forest</h3>
+                <p className="text-slate-500 text-xs mt-1">Daily habit tracker</p>
+              </div>
+              <div className="absolute inset-0 bg-emerald-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+
             <button onClick={() => onNavigate('sounds')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-black uppercase tracking-[0.12em] border border-purple-200">S</span>
               <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mb-3 group-hover:bg-purple-200 transition-colors">
                 <Music className="text-purple-700 group-hover:scale-110 transition-transform duration-300" size={20} />
               </div>
               <div>
                 <h3 className="text-slate-900 font-bold text-base">Sounds</h3>
-                <p className="text-slate-500 text-xs mt-1">Ambient soundscapes</p>
+                <p className="text-slate-500 text-xs mt-1">Ambient layers</p>
               </div>
               <div className="absolute inset-0 bg-purple-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
             <button onClick={() => onNavigate('stretch')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors">
-                <Activity className="text-emerald-700 group-hover:scale-110 transition-transform duration-300" size={20} />
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-[0.12em] border border-rose-200">X</span>
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
+                <Activity className="text-rose-700 group-hover:scale-110 transition-transform duration-300" size={20} />
               </div>
               <div>
                 <h3 className="text-slate-900 font-bold text-base">Stretch</h3>
                 <p className="text-slate-500 text-xs mt-1">Quick body refresh</p>
               </div>
-              <div className="absolute inset-0 bg-emerald-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-rose-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+
+            <button onClick={() => onNavigate('recovery')} className="group relative flex flex-col p-5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/40 shadow-soft hover:-translate-y-1 hover:shadow-lg transition-all duration-300 text-left">
+              <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-[0.12em] border border-indigo-200">R</span>
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mb-3 group-hover:bg-indigo-200 transition-colors">
+                <MoonStar className="text-indigo-700 group-hover:scale-110 transition-transform duration-300" size={20} />
+              </div>
+              <div>
+                <h3 className="text-slate-900 font-bold text-base">Recovery</h3>
+                <p className="text-slate-500 text-xs mt-1">Sleep & mood tracker</p>
+              </div>
+              <div className="absolute inset-0 bg-indigo-500/5 rounded-[2rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
           </div>
         </div>
@@ -710,7 +727,7 @@ export default function Dashboard({ onNavigate }: Props) {
                   <Timer size={24} className="text-primary-dark" />
                 </div>
                 <span className="text-sm font-bold text-slate-700">Deep Work</span>
-                <span className="text-[10px] text-slate-400 mt-1">Start 25m focus</span>
+                <span className="text-[10px] text-slate-400 mt-1">Start focus</span>
               </button>
               
               <button onClick={() => { setShowQuickActions(false); onNavigate('breathe'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-accent-water transition-all group hover:-translate-y-1">
@@ -718,15 +735,15 @@ export default function Dashboard({ onNavigate }: Props) {
                   <Wind size={24} className="text-[#5e8ea6]" />
                 </div>
                 <span className="text-sm font-bold text-slate-700">Quick Calm</span>
-                <span className="text-[10px] text-slate-400 mt-1">1m breathing</span>
+                <span className="text-[10px] text-slate-400 mt-1">Breathing</span>
               </button>
               
-              <button onClick={() => { setShowQuickActions(false); onNavigate('hydrate'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-blue-400 transition-all group hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
-                  <Droplets size={24} className="text-blue-600" />
+              <button onClick={() => { setShowQuickActions(false); onNavigate('habits'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all group hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-full bg-[#86efac]/30 flex items-center justify-center mb-3 group-hover:bg-[#86efac]/50 transition-colors">
+                  <Sparkles size={24} className="text-emerald-700" />
                 </div>
-                <span className="text-sm font-bold text-slate-700">Log Water</span>
-                <span className="text-[10px] text-slate-400 mt-1">+200ml glass</span>
+                <span className="text-sm font-bold text-slate-700">Forest Floor</span>
+                <span className="text-[10px] text-slate-400 mt-1">Habit tracking</span>
               </button>
               
               <button onClick={() => { setShowQuickActions(false); onNavigate('tasks'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-amber-400 transition-all group hover:-translate-y-1">
@@ -737,17 +754,17 @@ export default function Dashboard({ onNavigate }: Props) {
                 <span className="text-[10px] text-slate-400 mt-1">Add to list</span>
               </button>
 
-              <button onClick={() => { setShowQuickActions(false); onNavigate('sounds'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-purple-400 transition-all group hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-3 group-hover:bg-purple-200 transition-colors">
-                  <Music size={24} className="text-purple-700" />
+              <button onClick={() => { setShowQuickActions(false); onNavigate('recovery'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-indigo-400 transition-all group hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mb-3 group-hover:bg-indigo-200 transition-colors">
+                  <MoonStar size={24} className="text-indigo-700" />
                 </div>
-                <span className="text-sm font-bold text-slate-700">Play Sounds</span>
-                <span className="text-[10px] text-slate-400 mt-1">Ambient focus</span>
+                <span className="text-sm font-bold text-slate-700">Recovery</span>
+                <span className="text-[10px] text-slate-400 mt-1">Sleep & mood</span>
               </button>
 
-              <button onClick={() => { setShowQuickActions(false); onNavigate('stretch'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-emerald-400 transition-all group hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors">
-                  <Activity size={24} className="text-emerald-700" />
+              <button onClick={() => { setShowQuickActions(false); onNavigate('stretch'); }} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-sage-100 shadow-sm hover:shadow-md hover:border-rose-400 transition-all group hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
+                  <Activity size={24} className="text-rose-700" />
                 </div>
                 <span className="text-sm font-bold text-slate-700">Stretch</span>
                 <span className="text-[10px] text-slate-400 mt-1">Quick refresh</span>
