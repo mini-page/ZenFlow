@@ -242,12 +242,18 @@ export default function Dashboard({ onNavigate }: Props) {
     return d.toISOString().split('T')[0];
   });
   
-  const weeklyData = last7Days.map(date => {
-    const minutes = sessions
-      .filter(s => s.completed_at && s.completed_at.startsWith(date))
-      .reduce((sum, s) => sum + s.duration, 0);
-    return { date, minutes };
+  const sessionsByDate: Record<string, number> = {};
+  sessions.forEach(s => {
+    if (s.completed_at) {
+      const date = s.completed_at.substring(0, 10);
+      sessionsByDate[date] = (sessionsByDate[date] || 0) + s.duration;
+    }
   });
+
+  const weeklyData = last7Days.map(date => ({
+    date,
+    minutes: sessionsByDate[date] || 0
+  }));
   const maxMinutes = Math.max(...weeklyData.map(d => d.minutes), 60);
 
   return (
