@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "node --experimental-strip-types src/utils/format.test.ts"
+    "test": "node --experimental-strip-types --test src/AppContext.test.ts src/navigation.test.ts src/utils/format.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
