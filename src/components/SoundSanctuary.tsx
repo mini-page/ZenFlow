@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Play, Pause, Volume2, StopCircle, Upload, ArrowLeft, Heart, Repeat, Shuffle, Plus, Music, Search, X, AlertCircle, Headphones, Cloud, Sparkles, Rocket, Waves, Flame, Coffee, Train, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Pause, Volume2, StopCircle, Upload, Heart, Plus, Music, Search, X, Trash2 } from 'lucide-react';
 import { useAppContext } from '../AppContext';
 import SharedHeader from './SharedHeader';
 
