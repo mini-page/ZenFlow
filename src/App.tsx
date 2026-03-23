@@ -20,6 +20,7 @@ import { AppView } from './navigation';
 import { formatTime } from './utils/format';
 
 import SharedHeader from './components/SharedHeader';
+import Toast from './components/ui/Toast';
 import { Info, Timer, Play, Pause, Music, X } from 'lucide-react';
 
 export type View = AppView;
@@ -224,7 +225,7 @@ function AudioManager() {
 
       if (playing[sound.id]) {
         if (audio.paused) {
-          audio.play().catch(e => console.log('Audio playback prevented:', e));
+          audio.play().catch(() => {});
         }
       } else {
         if (!audio.paused) {
@@ -342,6 +343,7 @@ function AppContent() {
       <KeyboardManager currentView={currentView} setCurrentView={setCurrentView} />
       <FlowPill currentView={currentView} setCurrentView={setCurrentView} />
       <AudioManager />
+      <Toast />
 
       <div key={currentView} className="flex-1 relative overflow-hidden animate-in fade-in duration-700">
         {renderView()}

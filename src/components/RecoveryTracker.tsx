@@ -269,14 +269,27 @@ export default function RecoveryTracker({ onBack }: { onBack: () => void }) {
       uniqueDates.add(h.date);
     }
     const dates = Array.from(uniqueDates).sort((a, b) => b.localeCompare(a));
+    const dates = Array.from(new Set(history.map((h) => h.date))).sort((a, b) => b.localeCompare(a));
+    if (!dates.length) return 0;
 
     const dayMs = 24 * 60 * 60 * 1000;
 
     let count = 0;
-    let expected = new Date(dates[0] + 'T00:00:00').getTime();
+
+    // Performance optimization: parse YYYY-MM-DD string without instantiating Date objects
+    const parseDateStr = (date: string) => {
+      // Format: YYYY-MM-DD
+      // Index:  0123 56 89
+      const y = (date.charCodeAt(0) - 48) * 1000 + (date.charCodeAt(1) - 48) * 100 + (date.charCodeAt(2) - 48) * 10 + (date.charCodeAt(3) - 48);
+      const m = (date.charCodeAt(5) - 48) * 10 + (date.charCodeAt(6) - 48) - 1;
+      const d = (date.charCodeAt(8) - 48) * 10 + (date.charCodeAt(9) - 48);
+      return Date.UTC(y, m, d);
+    };
+
+    let expected = parseDateStr(dates[0]);
 
     for (const date of dates) {
-      const ts = new Date(date + 'T00:00:00').getTime();
+      const ts = parseDateStr(date);
       if (ts === expected) {
         count += 1;
         expected -= dayMs;
