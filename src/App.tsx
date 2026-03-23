@@ -207,15 +207,16 @@ function AudioManager() {
     });
 
     sounds.forEach(sound => {
-      const url = sound.url || soundUrls[sound.id] || soundUrls['forest-rain'];
-      if (!audioRefs.current[sound.id]) {
-        const audio = new Audio(url);
+      let audio = audioRefs.current[sound.id];
+
+      if (!audio) {
+        const url = sound.url || soundUrls[sound.id] || soundUrls['forest-rain'];
+        audio = new Audio(url);
         audio.loop = true; 
         audioRefs.current[sound.id] = audio;
-      }
-
-      const audio = audioRefs.current[sound.id];
-      if (sound.url && audio.src !== sound.url) {
+      } else if (sound.url && !audio.src.endsWith(sound.url)) {
+        // Only update src if a custom URL is provided and it doesn't match the current source
+        // Using endsWith to handle cases where browser resolves relative URLs to absolute
         audio.src = sound.url;
       }
 

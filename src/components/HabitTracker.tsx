@@ -148,6 +148,7 @@ export default function HabitTracker({ onBack }: { onBack: () => void }) {
         onBack={onBack} 
         icon={Leaf} 
         iconColor="text-primary-dark"
+        currentView="habits"
       />
 
       <main className="flex-1 overflow-y-auto custom-scrollbar relative z-10 px-6 py-8 max-w-7xl mx-auto w-full">
