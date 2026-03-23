@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, Droplet, GlassWater, Edit2, X, Plus, RotateCcw } from 'lucide-react';
+import { Settings, Droplet, GlassWater, X, Plus, RotateCcw } from 'lucide-react';
 import SharedHeader from './SharedHeader';
 import { useAppContext } from '../AppContext';
 
