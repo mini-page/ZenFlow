@@ -263,6 +263,12 @@ export default function RecoveryTracker({ onBack }: { onBack: () => void }) {
 
   const streak = useMemo(() => {
     if (history.length === 0) return 0;
+
+    const uniqueDates = new Set<string>();
+    for (const h of history) {
+      uniqueDates.add(h.date);
+    }
+    const dates = Array.from(uniqueDates).sort((a, b) => b.localeCompare(a));
     const dates = Array.from(new Set(history.map((h) => h.date))).sort((a, b) => b.localeCompare(a));
     if (!dates.length) return 0;
 
