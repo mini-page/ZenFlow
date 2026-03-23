@@ -3,6 +3,7 @@ import { Bed, Keyboard, Moon, RotateCcw, Save, Smile, Sparkles, Volume2, VolumeX
 import SharedHeader from './SharedHeader';
 import GlassCard from './ui/GlassCard';
 import Button from './ui/Button';
+import { calculateStreak } from '../utils/recovery';
 
 type MoodLevel =
   | 'rough'
@@ -261,26 +262,7 @@ export default function RecoveryTracker({ onBack }: { onBack: () => void }) {
     };
   }, [history]);
 
-  const streak = useMemo(() => {
-    if (history.length === 0) return 0;
-    const dates = Array.from(new Set(history.map((h) => h.date))).sort((a, b) => b.localeCompare(a));
-    const dayMs = 24 * 60 * 60 * 1000;
-
-    let count = 0;
-    let expected = new Date(dates[0] + 'T00:00:00').getTime();
-
-    for (const date of dates) {
-      const ts = new Date(date + 'T00:00:00').getTime();
-      if (ts === expected) {
-        count += 1;
-        expected -= dayMs;
-      } else {
-        break;
-      }
-    }
-
-    return count;
-  }, [history]);
+  const streak = useMemo(() => calculateStreak(history), [history]);
 
   return (
     <div className="flex flex-col h-full w-full bg-background-light text-sage-900 transition-colors duration-1000 relative overflow-hidden mesh-gradient font-sans">
