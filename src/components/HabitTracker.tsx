@@ -17,6 +17,7 @@ interface Habit {
 
 const STORAGE_KEY = 'zenflow_habits';
 const CATEGORIES = ['All', 'Wellness', 'Growth', 'Mind', 'General'];
+const HABIT_CATEGORIES = CATEGORIES.filter(c => c !== 'All');
 
 export default function HabitTracker({ onBack }: { onBack: () => void }) {
   const [habits, setHabits] = useState<Habit[]>(() => {
@@ -334,7 +335,7 @@ export default function HabitTracker({ onBack }: { onBack: () => void }) {
                 <div className="col-span-2">
                   <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Category</label>
                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {CATEGORIES.filter(c => c !== 'All').map(c => (
+                    {HABIT_CATEGORIES.map(c => (
                       <button
                         key={c} type="button" onClick={() => setNewHabitCat(c)}
                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${newHabitCat === c ? 'bg-primary border-primary text-forest-deep' : 'bg-white border-slate-100 text-slate-400'}`}
