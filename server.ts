@@ -9,37 +9,42 @@ const __dirname = path.dirname(__filename);
 
 const db = new Database("zenflow.db");
 
-// Initialize database
-db.exec(`
-  CREATE TABLE IF NOT EXISTS focus_sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    duration INTEGER,
-    task_name TEXT,
-    completed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+export function initializeDatabase(database: Database.Database) {
+  // Initialize database
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS focus_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      duration INTEGER,
+      task_name TEXT,
+      completed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-  CREATE TABLE IF NOT EXISTS affirmations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    text TEXT NOT NULL,
-    is_custom INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+    CREATE TABLE IF NOT EXISTS affirmations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      text TEXT NOT NULL,
+      is_custom INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 
-// Seed default affirmations if empty
-const affirmationCount = db.prepare("SELECT COUNT(*) as count FROM affirmations").get() as { count: number };
-if (affirmationCount.count === 0) {
-  const defaultAffirmations = [
-    "I am capable of achieving my goals.",
-    "Every breath I take fills me with peace.",
-    "I focus on what I can control and let go of the rest.",
-    "My productivity is a reflection of my focus, not my speed.",
-    "I am worthy of rest and rejuvenation.",
-    "Today is a new opportunity to grow my garden."
-  ];
-  const insert = db.prepare("INSERT INTO affirmations (text) VALUES (?)");
-  defaultAffirmations.forEach(text => insert.run(text));
+  // Seed default affirmations if empty
+  const affirmationCount = database.prepare("SELECT COUNT(*) as count FROM affirmations").get() as { count: number };
+  if (affirmationCount.count === 0) {
+    const defaultAffirmations = [
+      "I am capable of achieving my goals.",
+      "Every breath I take fills me with peace.",
+      "I focus on what I can control and let go of the rest.",
+      "My productivity is a reflection of my focus, not my speed.",
+      "I am worthy of rest and rejuvenation.",
+      "Today is a new opportunity to grow my garden."
+    ];
+    const insert = database.prepare("INSERT INTO affirmations (text) VALUES (?)");
+    defaultAffirmations.forEach(text => insert.run(text));
+  }
 }
+
+// Initialize the main database connection
+initializeDatabase(db);
 
 async function startServer() {
   const app = express();
@@ -94,4 +99,6 @@ async function startServer() {
   });
 }
 
-startServer();
+if (process.argv[1] === __filename) {
+  startServer();
+}
