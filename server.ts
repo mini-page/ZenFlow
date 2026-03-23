@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new Database("zenflow.db");
+export const db = new Database(process.env.NODE_ENV === "test" ? ":memory:" : "zenflow.db");
 
 // Initialize database
 db.exec(`
@@ -41,57 +41,62 @@ if (affirmationCount.count === 0) {
   defaultAffirmations.forEach(text => insert.run(text));
 }
 
+export const app = express();
+app.use(express.json());
+
+// API Routes
+app.get("/api/sessions", (req, res) => {
+  const sessions = db.prepare("SELECT * FROM focus_sessions ORDER BY completed_at DESC LIMIT 50").all();
+  res.json(sessions);
+});
+
+app.post("/api/sessions", (req, res) => {
+  const { duration, task_name } = req.body;
+  const result = db.prepare("INSERT INTO focus_sessions (duration, task_name) VALUES (?, ?)").run(duration, task_name);
+  res.json({ id: result.lastInsertRowid });
+});
+
+app.get("/api/affirmations", (req, res) => {
+  const affirmations = db.prepare("SELECT * FROM affirmations ORDER BY created_at DESC").all();
+  res.json(affirmations);
+});
+
+app.post("/api/affirmations", (req, res) => {
+  const { text, is_custom } = req.body;
+  const result = db.prepare("INSERT INTO affirmations (text, is_custom) VALUES (?, ?)").run(text, is_custom ? 1 : 0);
+  res.json({ id: result.lastInsertRowid });
+});
+
+app.delete("/api/affirmations/:id", (req, res) => {
+  db.prepare("DELETE FROM affirmations WHERE id = ?").run(req.params.id);
+  res.json({ success: true });
+});
+
 async function startServer() {
-  const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
-
-  // API Routes
-  app.get("/api/sessions", (req, res) => {
-    const sessions = db.prepare("SELECT * FROM focus_sessions ORDER BY completed_at DESC LIMIT 50").all();
-    res.json(sessions);
-  });
-
-  app.post("/api/sessions", (req, res) => {
-    const { duration, task_name } = req.body;
-    const result = db.prepare("INSERT INTO focus_sessions (duration, task_name) VALUES (?, ?)").run(duration, task_name);
-    res.json({ id: result.lastInsertRowid });
-  });
-
-  app.get("/api/affirmations", (req, res) => {
-    const affirmations = db.prepare("SELECT * FROM affirmations ORDER BY created_at DESC").all();
-    res.json(affirmations);
-  });
-
-  app.post("/api/affirmations", (req, res) => {
-    const { text, is_custom } = req.body;
-    const result = db.prepare("INSERT INTO affirmations (text, is_custom) VALUES (?, ?)").run(text, is_custom ? 1 : 0);
-    res.json({ id: result.lastInsertRowid });
-  });
-
-  app.delete("/api/affirmations/:id", (req, res) => {
-    db.prepare("DELETE FROM affirmations WHERE id = ?").run(req.params.id);
-    res.json({ success: true });
-  });
-
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
+  } else if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (process.env.NODE_ENV !== "test") {
+    app.listen(PORT, "0.0.0.0", () => {
+      // eslint-disable-next-line no-console
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
