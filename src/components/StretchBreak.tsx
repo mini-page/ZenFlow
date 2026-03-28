@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, Pause, Play, SkipForward, X, Activity, RotateCcw, CheckCircle2, Clock } from 'lucide-react';
+import { Pause, Play, SkipForward, X, Activity, RotateCcw, CheckCircle2, Clock } from 'lucide-react';
 import SharedHeader from './SharedHeader';
-import { useAppContext } from '../AppContext';
 
 const STRETCHES = [
   {
