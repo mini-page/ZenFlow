@@ -89,7 +89,13 @@ async function startServer() {
   });
 
   app.delete("/api/affirmations/:id", (req, res) => {
-    db.prepare("DELETE FROM affirmations WHERE id = ?").run(req.params.id);
+    const id = parseInt(req.params.id, 10);
+
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: "Invalid affirmation ID. Must be a positive integer." });
+    }
+
+    db.prepare("DELETE FROM affirmations WHERE id = ?").run(id);
     res.json({ success: true });
   });
 
