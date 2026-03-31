@@ -4,12 +4,6 @@ import { X, Wind, Settings, ArrowLeft, Play, Pause, Plus, Edit2, Trash2, History
 import { useAppContext, BreathingPattern } from '../AppContext';
 import SharedHeader from './SharedHeader';
 
-const MESSAGES = {
-  'Inhale': ['Fill your lungs with peace', 'Breathe in the morning light', 'Invite calm into your body'],
-  'Hold': ['Savor the stillness', 'Be present in this moment', 'Find your inner center'],
-  'Exhale': ['Release all tension', 'Let go of what no longer serves you', 'Exhale slowly and gently'],
-  'Hold Out': ['Rest in the emptiness', 'Wait for the next breath', 'Peace is here']
-};
 
 export default function BreathStudio({ onBack }: { onBack: () => void }) {
   const { breathingPatterns, setBreathingPatterns, breathingHistory, setBreathingHistory } = useAppContext();
@@ -18,7 +12,6 @@ export default function BreathStudio({ onBack }: { onBack: () => void }) {
   const [patternId, setPatternId] = useState<string>('4-7-8');
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'patterns' | 'history'>('patterns');
-  const [messageIndex, setMessageIndex] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [overlayIcon, setOverlayIcon] = useState<'play' | 'pause' | null>(null);
@@ -43,9 +36,6 @@ export default function BreathStudio({ onBack }: { onBack: () => void }) {
   };
   const bubbleColors = themeColors[pattern.theme as keyof typeof themeColors] || themeColors.neutral;
 
-  useEffect(() => {
-    setMessageIndex(Math.floor(Math.random() * 3));
-  }, [phase]);
 
   // Handle session tracking
   useEffect(() => {
