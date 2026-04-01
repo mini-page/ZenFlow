@@ -64,9 +64,13 @@ export default function Dashboard({ onNavigate }: Props) {
             else if (code >= 1 && code <= 3) condition = 'cloudy';
             
             setWeather({ condition, temp: Math.round(data.current_weather?.temperature || 72) });
-          }, () => {});
+          }, () => {
+            showToast('Unable to get your location for weather updates.', 'error');
+          });
         }
-      } catch (e) { console.error('Weather fetch failed', e); }
+      } catch (e) {
+        showToast('Failed to fetch weather data.', 'error');
+      }
     };
     fetchWeather();
   }, []);
@@ -80,7 +84,6 @@ export default function Dashboard({ onNavigate }: Props) {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((e) => {
         showToast('Unable to enter fullscreen. Please check your browser settings.', 'error');
-        console.error(`Error attempting to enable fullscreen: ${e.message}`);
       });
       setIsFullscreen(true);
     } else {
