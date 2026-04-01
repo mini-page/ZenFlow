@@ -38,7 +38,10 @@ if (affirmationCount.count === 0) {
     "Today is a new opportunity to grow my garden."
   ];
   const insert = db.prepare("INSERT INTO affirmations (text) VALUES (?)");
-  defaultAffirmations.forEach(text => insert.run(text));
+  const insertMany = db.transaction((affirmations: string[]) => {
+    for (const text of affirmations) insert.run(text);
+  });
+  insertMany(defaultAffirmations);
 }
 
 async function startServer() {
