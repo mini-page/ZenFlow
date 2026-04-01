@@ -146,6 +146,7 @@ export default function HabitTracker({ onBack }: { onBack: () => void }) {
       <SharedHeader 
         title="Forest Floor" 
         onBack={onBack} 
+        currentView="habits"
         icon={Leaf} 
         iconColor="text-primary-dark"
       />
