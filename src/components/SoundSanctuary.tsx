@@ -108,10 +108,10 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
         icon={Music} 
         actions={
           <div className="flex gap-2">
-            <button onClick={() => setShowAddModal(true)} className="size-10 flex items-center justify-center rounded-xl bg-primary text-forest-deep hover:bg-primary-dark transition-all shadow-sm">
+            <button aria-label="Add custom sound" onClick={() => setShowAddModal(true)} className="size-10 flex items-center justify-center rounded-xl bg-primary text-forest-deep hover:bg-primary-dark transition-all shadow-sm">
               <Plus size={20} />
             </button>
-            <button onClick={() => setIsSearching(!isSearching)} className={`size-10 flex items-center justify-center rounded-xl transition-all ${isSearching ? 'bg-primary text-forest-deep' : 'bg-white/50 hover:bg-primary/20'}`}>
+            <button aria-label="Search sounds" onClick={() => setIsSearching(!isSearching)} className={`size-10 flex items-center justify-center rounded-xl transition-all ${isSearching ? 'bg-primary text-forest-deep' : 'bg-white/50 hover:bg-primary/20'}`}>
               <Search size={20} />
             </button>
           </div>
@@ -152,7 +152,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
                   autoFocus
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="absolute right-4 text-forest-muted hover:text-forest-deep">
+                  <button aria-label="Clear search" onClick={() => setSearchQuery('')} className="absolute right-4 text-forest-muted hover:text-forest-deep">
                     <X size={18} />
                   </button>
                 )}
@@ -217,11 +217,11 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
                     
                     {/* Actions Overlay */}
                     <div className="absolute top-2 right-2 flex flex-col gap-2 z-20">
-                      <button onClick={() => toggleFavorite(sound.id)} className={`p-2 rounded-full backdrop-blur-md transition-colors ${favorites.has(sound.id) ? 'bg-rose-500 text-white' : 'bg-white/30 text-forest-deep hover:bg-white/60'}`}>
+                      <button aria-label={favorites.has(sound.id) ? "Remove from favorites" : "Add to favorites"} onClick={() => toggleFavorite(sound.id)} className={`p-2 rounded-full backdrop-blur-md transition-colors ${favorites.has(sound.id) ? 'bg-rose-500 text-white' : 'bg-white/30 text-forest-deep hover:bg-white/60'}`}>
                         <Heart size={14} className={favorites.has(sound.id) ? 'fill-current' : ''} />
                       </button>
                       {sound.isCustom && (
-                        <button onClick={() => deleteCustomSound(sound.id)} className="p-2 rounded-full backdrop-blur-md bg-white/30 text-forest-deep hover:bg-red-500 hover:text-white transition-colors">
+                        <button aria-label="Delete custom sound" onClick={() => deleteCustomSound(sound.id)} className="p-2 rounded-full backdrop-blur-md bg-white/30 text-forest-deep hover:bg-red-500 hover:text-white transition-colors">
                           <Trash2 size={14} />
                         </button>
                       )}
@@ -230,6 +230,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
                     {/* Play Button */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <button 
+                        aria-label={playing[sound.id] ? `Pause ${sound.name}` : `Play ${sound.name}`}
                         onClick={() => togglePlay(sound.id)}
                         className={`size-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 transform group-hover:scale-110 ${playing[sound.id] ? 'bg-primary text-forest-deep' : 'bg-white/90 text-forest-deep'}`}
                       >
@@ -284,7 +285,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
           <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 p-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-forest-deep">Add Custom Sound</h3>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-sage-500"><X size={20} /></button>
+              <button aria-label="Close add sound modal" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-sage-500"><X size={20} /></button>
             </div>
             
             <div className="space-y-6">
@@ -362,6 +363,7 @@ export default function SoundSanctuary({ onBack }: { onBack: () => void }) {
               onClick={stopAll}
               className="size-12 rounded-full bg-forest-deep text-white flex items-center justify-center shadow-lg hover:bg-forest-deep/90 hover:scale-105 active:scale-95 transition-all"
               title="Stop All"
+              aria-label="Stop all sounds"
             >
               <StopCircle size={24} />
             </button>

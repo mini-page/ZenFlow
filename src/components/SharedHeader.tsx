@@ -1,8 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Leaf, Settings, LucideIcon, Info } from 'lucide-react';
-import IconButton from './IconButton';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { ArrowLeft, Leaf, Settings, LucideIcon, Timer, Wind, Droplet, MoonStar, ListTodo, BookOpen, Music, Activity, Cpu, Sparkles, Zap, X } from 'lucide-react';
+import IconButton from './IconButton';
 import { AppView, NAV_GROUPS, NAV_ITEMS } from '../navigation';
 
 interface SharedHeaderProps {
@@ -209,6 +207,7 @@ export default function SharedHeader({
   };
 
   return (
+    <>
     <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-forest-deep/5 px-6 md:px-10 py-4 glass-panel sticky top-0 z-50 shrink-0">
       <div className="flex items-center gap-4 text-forest-deep">
         <IconButton
@@ -225,39 +224,29 @@ export default function SharedHeader({
       
       <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
         <nav className="hidden md:flex items-center">
-          <div ref={containerRef} className="tab-switcher relative flex items-center bg-white/40 p-[6px] rounded-full backdrop-blur-md border border-white/50 shadow-sm">
-            {/* Sliding Background */}
-            <div 
-              className="absolute top-[6px] left-[6px] h-[calc(100%-12px)] bg-white rounded-full shadow-md transition-all duration-300 ease-out z-10"
-              style={{
-                width: `${sliderStyle.width}px`,
-                transform: sliderStyle.transform
-              }}
-            />
-            
-            {/* Current Page Tab */}
-            <button 
-              ref={currentTabRef}
-              onClick={() => setActiveTab('current')}
-              className={`relative z-20 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-200 flex items-center gap-2 ${activeTab === 'current' ? 'text-forest-deep' : 'text-forest-deep/50 hover:text-forest-deep/70'}`}
-            >
-              {Icon && <Icon size={16} className={activeTab === 'current' ? iconColor : 'text-slate-400'} />}
-              <span>{title}</span>
-            </button>
-            <div className="size-8 flex items-center justify-center bg-primary rounded-full text-forest-deep shrink-0">
-              <Leaf size={18} strokeWidth={3} className="fill-current" />
-            </div>
-            <h2 className="text-forest-deep text-base md:text-lg font-serif font-bold leading-tight tracking-tight truncate">
-              {title}
-            </h2>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            {actions}
-            {!actions && (
-              <button className="flex size-10 items-center justify-center rounded-full bg-white/50 text-forest-deep hover:bg-primary/20 transition-all">
-                <Settings size={20} />
-              </button>
-            )}
+          <div className="flex items-center gap-1.5 bg-white/40 p-1.5 rounded-full backdrop-blur-md border border-white/50 shadow-sm">
+            {groupedItems.map((item) => {
+              const isActive = item.view === currentView;
+              const Icon = iconMap[item.icon] || Sparkles;
+              return (
+                <button
+                  key={item.view}
+                  onClick={() => handleNavigate(item.view)}
+                  className={`px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2
+                    ${isActive
+                      ? 'bg-white text-forest-deep shadow-sm scale-100'
+                      : 'text-forest-deep/50 hover:text-forest-deep/80 hover:bg-white/50 scale-95 hover:scale-100'
+                    }`}
+                  title={item.label}
+                  aria-label={`Navigate to ${item.label}`}
+                >
+                  <Icon size={16} className={isActive ? 'text-primary-dark' : 'text-slate-400'} />
+                  <span className={isActive ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden transition-all duration-300'}>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </nav>
         
@@ -271,7 +260,8 @@ export default function SharedHeader({
             />
           )}
         </div>
-      </header>
+      </div>
+    </header>
       <div className="h-24 shrink-0" aria-hidden />
 
       {isFabOpen && (
