@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import path from "path";
@@ -45,7 +47,19 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(helmet());
   app.use(express.json());
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per 15 minutes
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests from this IP, please try again after 15 minutes" }
+  });
+
+  // Apply the rate limiting middleware to API calls only
+  app.use("/api", apiLimiter);
 
   // API Routes
   app.get("/api/sessions", (req, res) => {
