@@ -64,7 +64,7 @@ export default function Dashboard({ onNavigate }: Props) {
             else if (code >= 1 && code <= 3) condition = 'cloudy';
             
             setWeather({ condition, temp: Math.round(data.current_weather?.temperature || 72) });
-          }, () => {});
+          }, (error) => console.error('Geolocation failed', error));
         }
       } catch (e) { console.error('Weather fetch failed', e); }
     };
@@ -130,6 +130,7 @@ export default function Dashboard({ onNavigate }: Props) {
         }
       }
     } catch (error) {
+      console.error('Affirmations fetch failed', error);
       // Fallback: use cached or default affirmations
       const cached = localStorage.getItem('zenflow_affirmations_cache');
       const fallback = cached ? JSON.parse(cached) : DEFAULT_AFFIRMATIONS;
@@ -158,6 +159,7 @@ export default function Dashboard({ onNavigate }: Props) {
       setSessions(data);
       localStorage.setItem('zenflow_sessions_cache', JSON.stringify(data));
     } catch (e) {
+      console.error('Sessions fetch failed', e);
       // Fallback to cached sessions
       const cached = localStorage.getItem('zenflow_sessions_cache');
       if (cached) setSessions(JSON.parse(cached));
@@ -180,6 +182,7 @@ export default function Dashboard({ onNavigate }: Props) {
       });
       if (res.ok) fetchAffirmations();
     } catch (error) {
+      console.error('Add affirmation failed', error);
       // Already saved locally, will sync when backend is available
     }
   };
@@ -192,6 +195,7 @@ export default function Dashboard({ onNavigate }: Props) {
     try {
       await fetch(`/api/affirmations/${id}`, { method: 'DELETE' });
     } catch (error) {
+      console.error('Delete affirmation failed', error);
       // Already removed locally
     }
   };
