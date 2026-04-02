@@ -274,10 +274,10 @@ export default function Dashboard({ onNavigate }: Props) {
         currentView="dashboard"
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group">
+            <button aria-label="View Statistics" onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
               <BarChart3 size={20} className="group-hover:scale-110 transition-transform" />
             </button>
-            <button onClick={toggleFullscreen} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group">
+            <button aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"} onClick={toggleFullscreen} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
           </div>
@@ -311,7 +311,7 @@ export default function Dashboard({ onNavigate }: Props) {
                           autoFocus
                           className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-slate-900 w-full max-w-[220px]"
                         />
-                        <button onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
+                        <button aria-label="Save Name" onClick={() => setIsEditingName(false)} className="p-1 rounded-md text-primary hover:text-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                           <Check size={20} />
                         </button>
                       </div>
@@ -386,7 +386,7 @@ export default function Dashboard({ onNavigate }: Props) {
                 </div>
               </div>
               <div className="relative z-10 flex justify-end">
-                <button onClick={(e) => { e.stopPropagation(); toggleTimer(); }} className="px-6 py-2 rounded-full bg-primary text-forest-deep font-bold text-sm shadow-md hover:bg-primary-dark transition-all active:scale-95">
+                <button aria-label="Toggle Focus Timer" onClick={(e) => { e.stopPropagation(); toggleTimer(); }} className="px-6 py-2 rounded-full bg-primary text-forest-deep font-bold text-sm shadow-md hover:bg-primary-dark transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark">
                   {isActive ? 'Pause' : 'Resume Session'}
                 </button>
               </div>
