@@ -198,6 +198,7 @@ export default function TaskSoil({ onBack }: { onBack: () => void }) {
                         className="sr-only peer" 
                         checked={task.completed}
                         onChange={() => toggleTask(task.id)}
+                        aria-label={`Toggle task: ${task.text}`}
                       />
                       {/* Custom Seed Hole Checkbox */}
                       <div className={`size-8 rounded-full border border-[#8A9A8A]/30 transition-all duration-500 flex items-center justify-center overflow-hidden

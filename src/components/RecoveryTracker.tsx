@@ -269,7 +269,6 @@ export default function RecoveryTracker({ onBack }: { onBack: () => void }) {
       uniqueDates.add(h.date);
     }
     const dates = Array.from(uniqueDates).sort((a, b) => b.localeCompare(a));
-    const dates = Array.from(new Set(history.map((h) => h.date))).sort((a, b) => b.localeCompare(a));
     if (!dates.length) return 0;
 
     const dayMs = 24 * 60 * 60 * 1000;
