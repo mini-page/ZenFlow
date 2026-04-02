@@ -1,8 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Leaf, Settings, LucideIcon, Info } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { ArrowLeft, Leaf, Settings, LucideIcon, Info, Timer, Wind, Droplet, MoonStar, ListTodo, BookOpen, Music, Activity, Cpu, Sparkles, Zap, X } from 'lucide-react';
 import IconButton from './IconButton';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Leaf, Settings, LucideIcon, Timer, Wind, Droplet, MoonStar, ListTodo, BookOpen, Music, Activity, Cpu, Sparkles, Zap, X } from 'lucide-react';
 import { AppView, NAV_GROUPS, NAV_ITEMS } from '../navigation';
 
 interface SharedHeaderProps {
