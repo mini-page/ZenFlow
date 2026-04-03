@@ -274,10 +274,20 @@ export default function Dashboard({ onNavigate }: Props) {
         currentView="dashboard"
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group">
+            <button
+              onClick={() => setShowStatsModal(true)}
+              className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              aria-label="View Garden Stats"
+              title="View Garden Stats"
+            >
               <BarChart3 size={20} className="group-hover:scale-110 transition-transform" />
             </button>
-            <button onClick={toggleFullscreen} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group">
+            <button
+              onClick={toggleFullscreen}
+              className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
           </div>
@@ -311,7 +321,12 @@ export default function Dashboard({ onNavigate }: Props) {
                           autoFocus
                           className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-slate-900 w-full max-w-[220px]"
                         />
-                        <button onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
+                        <button
+                          onClick={() => setIsEditingName(false)}
+                          className="p-1 text-primary hover:text-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded"
+                          aria-label="Save Name"
+                          title="Save Name"
+                        >
                           <Check size={20} />
                         </button>
                       </div>
@@ -608,7 +623,12 @@ export default function Dashboard({ onNavigate }: Props) {
                 <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><BarChart3 size={18} /></div>
                 <h3 className="font-bold text-lg text-slate-900">Garden Stats</h3>
               </div>
-              <button onClick={() => setShowStatsModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
+              <button
+                onClick={() => setShowStatsModal(false)}
+                className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                aria-label="Close Garden Stats"
+                title="Close Garden Stats"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -653,7 +673,12 @@ export default function Dashboard({ onNavigate }: Props) {
           <div className="bg-background-light w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80%] animate-in slide-in-from-bottom-10">
             <div className="p-6 border-b border-sage-200 flex justify-between items-center shrink-0">
               <h3 className="font-bold text-lg text-slate-900">Affirmations</h3>
-              <button onClick={() => setShowAffirmationModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
+              <button
+                onClick={() => setShowAffirmationModal(false)}
+                className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                aria-label="Close Affirmations"
+                title="Close Affirmations"
+              >
                 <Check size={20} />
               </button>
             </div>
@@ -671,7 +696,9 @@ export default function Dashboard({ onNavigate }: Props) {
                   />
                   <button 
                     onClick={addAffirmation}
-                    className="p-2 bg-primary text-forest-deep rounded-xl hover:bg-primary-dark transition-colors"
+                    className="p-2 bg-primary text-forest-deep rounded-xl hover:bg-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    aria-label="Add Affirmation"
+                    title="Add Affirmation"
                   >
                     <Plus size={20} />
                   </button>
@@ -696,7 +723,9 @@ export default function Dashboard({ onNavigate }: Props) {
                           e.stopPropagation();
                           deleteAffirmation(aff.id);
                         }}
-                        className="text-slate-400 hover:text-red-500 transition-colors"
+                        className="text-slate-400 hover:text-red-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 rounded"
+                        aria-label="Delete Affirmation"
+                        title="Delete Affirmation"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -720,7 +749,12 @@ export default function Dashboard({ onNavigate }: Props) {
                 </div>
                 <h3 className="font-bold text-lg text-slate-900">Quick Actions</h3>
               </div>
-              <button onClick={() => setShowQuickActions(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
+              <button
+                onClick={() => setShowQuickActions(false)}
+                className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                aria-label="Close Quick Actions"
+                title="Close Quick Actions"
+              >
                 <X size={20} />
               </button>
             </div>
