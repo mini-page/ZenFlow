@@ -274,10 +274,10 @@ export default function Dashboard({ onNavigate }: Props) {
         currentView="dashboard"
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group">
+            <button aria-label="View statistics" onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-indigo-500 group">
               <BarChart3 size={20} className="group-hover:scale-110 transition-transform" />
             </button>
-            <button onClick={toggleFullscreen} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group">
+            <button aria-label="Toggle fullscreen" onClick={toggleFullscreen} className="p-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/80 transition-colors text-slate-500 group">
               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
           </div>
@@ -311,7 +311,7 @@ export default function Dashboard({ onNavigate }: Props) {
                           autoFocus
                           className="text-2xl font-bold tracking-tight bg-transparent border-b border-primary outline-none text-slate-900 w-full max-w-[220px]"
                         />
-                        <button onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
+                        <button aria-label="Save name" onClick={() => setIsEditingName(false)} className="p-1 text-primary hover:text-primary-dark transition-colors">
                           <Check size={20} />
                         </button>
                       </div>
@@ -608,7 +608,7 @@ export default function Dashboard({ onNavigate }: Props) {
                 <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><BarChart3 size={18} /></div>
                 <h3 className="font-bold text-lg text-slate-900">Garden Stats</h3>
               </div>
-              <button onClick={() => setShowStatsModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
+              <button aria-label="Close statistics" onClick={() => setShowStatsModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -653,7 +653,7 @@ export default function Dashboard({ onNavigate }: Props) {
           <div className="bg-background-light w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80%] animate-in slide-in-from-bottom-10">
             <div className="p-6 border-b border-sage-200 flex justify-between items-center shrink-0">
               <h3 className="font-bold text-lg text-slate-900">Affirmations</h3>
-              <button onClick={() => setShowAffirmationModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
+              <button aria-label="Close affirmations" onClick={() => setShowAffirmationModal(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
                 <Check size={20} />
               </button>
             </div>
@@ -670,6 +670,7 @@ export default function Dashboard({ onNavigate }: Props) {
                     className="flex-1 bg-white border border-sage-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-primary"
                   />
                   <button 
+                    aria-label="Add affirmation"
                     onClick={addAffirmation}
                     className="p-2 bg-primary text-forest-deep rounded-xl hover:bg-primary-dark transition-colors"
                   >
@@ -692,6 +693,7 @@ export default function Dashboard({ onNavigate }: Props) {
                     <p className="text-sm text-slate-700 flex-1 pr-4">{aff.text}</p>
                     {aff.is_custom === 1 && (
                       <button 
+                        aria-label="Delete affirmation"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteAffirmation(aff.id);
@@ -720,7 +722,7 @@ export default function Dashboard({ onNavigate }: Props) {
                 </div>
                 <h3 className="font-bold text-lg text-slate-900">Quick Actions</h3>
               </div>
-              <button onClick={() => setShowQuickActions(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
+              <button aria-label="Close quick actions" onClick={() => setShowQuickActions(false)} className="p-2 hover:bg-sage-100 rounded-full text-slate-500 transition-colors">
                 <X size={20} />
               </button>
             </div>
